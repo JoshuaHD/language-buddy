@@ -5,8 +5,10 @@ import { useMemo, useRef, useState } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import Timeline from 'wavesurfer.js/dist/plugins/timeline.esm.js';
+import RecordPlugin from 'wavesurfer.js/plugins/record';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { setupRecordManager } from '@/utils/waveform/recordManager';
 import { setupRegionManager } from '@/utils/waveform/regionManager';
 
 const audioUrls = [
@@ -31,10 +33,16 @@ export default function VoiceRecorder() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [loopRegion, setLoopRegion] = useState(true);
     const [audioRate, setAudioRate] = useState(1);
+    const [url, setUrl] = useState(audioUrls[0]);
+
+    const [isRecording, setIsRecording] = useState(false);
+    const [isBusy, setIsBusy] = useState(false);
 
     // 1. Keep a ref to the regions plugin to use in buttons/functions
-    const regionsRef = useRef<any>(null);
     const regionActions = useRef<ReturnType<typeof setupRegionManager> | null>(
+        null,
+    );
+    const recordActions = useRef<ReturnType<typeof setupRecordManager> | null>(
         null,
     );
 
@@ -43,6 +51,10 @@ export default function VoiceRecorder() {
         () => [
             Timeline.create({ container: '#timeline' }),
             RegionsPlugin.create(),
+            RecordPlugin.create({
+                scrollingWaveform: true,
+                renderRecordedAudio: false,
+            }),
         ],
         [],
     );
@@ -58,6 +70,26 @@ export default function VoiceRecorder() {
             // Initialize region logic and store the API in a ref
             regionActions.current = setupRegionManager(ws, regionsPlugin, {
                 loopRegion,
+            });
+        }
+
+        const recordPlugin = ws
+            .getActivePlugins()
+            .find((p) => p instanceof RecordPlugin);
+
+        if (recordPlugin) {
+            recordActions.current = setupRecordManager(ws, recordPlugin);
+
+            // Sync recording state to React UI
+            recordPlugin.on('record-start', () => {
+                setIsRecording(true);
+                setIsBusy(false);
+            });
+            recordPlugin.on('record-end', (blob: Blob) => {
+                const blobUrl = URL.createObjectURL(blob);
+                setUrl(blobUrl);
+                setIsRecording(false);
+                setIsBusy(false);
             });
         }
     };
@@ -83,6 +115,25 @@ export default function VoiceRecorder() {
         }
     };
 
+    const handleToggleRecord = async () => {
+        if (isBusy || !recordActions.current) {
+            return;
+        }
+
+        setIsBusy(true);
+
+        if (isRecording) {
+            recordActions.current.stop();
+        } else {
+            try {
+                await recordActions.current.start();
+            } catch (err) {
+                console.error(err);
+                setIsBusy(false);
+            }
+        }
+    };
+
     function handleRegionLoop() {
         return () => {
             setLoopRegion(!loopRegion);
@@ -99,7 +150,7 @@ export default function VoiceRecorder() {
                 barGap={3}
                 barWidth={3}
                 barRadius={30}
-                url={audioUrls[0]}
+                url={url}
                 onReady={onReady}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
@@ -136,6 +187,18 @@ export default function VoiceRecorder() {
                 </div>
                 <Button variant={'outline'} onClick={handleAddRegion}>
                     Add Region
+                </Button>
+
+                <Button
+                    onClick={handleToggleRecord}
+                    disabled={isBusy}
+                    style={{
+                        backgroundColor: isRecording ? 'red' : 'black',
+                        color: 'white',
+                        opacity: isBusy ? 0.5 : 1,
+                    }}
+                >
+                    {isBusy ? 'Wait...' : isRecording ? 'Stop Recording' : 'Start Recording'}
                 </Button>
             </div>
         </div>
