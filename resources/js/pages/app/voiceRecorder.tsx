@@ -3,7 +3,7 @@ import { PauseIcon, PlayIcon } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useMemo, useRef, useState } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
-import Regions from 'wavesurfer.js/dist/plugins/regions.esm.js';
+import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import Timeline from 'wavesurfer.js/dist/plugins/timeline.esm.js';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,10 +34,16 @@ export default function VoiceRecorder() {
 
     // 1. Keep a ref to the regions plugin to use in buttons/functions
     const regionsRef = useRef<any>(null);
+    const regionActions = useRef<ReturnType<typeof setupRegionManager> | null>(
+        null,
+    );
 
     // 2. Create plugins inside useMemo, but DON'T assign to the ref here
     const plugins = useMemo(
-        () => [Timeline.create({ container: '#timeline' }), Regions.create()],
+        () => [
+            Timeline.create({ container: '#timeline' }),
+            RegionsPlugin.create(),
+        ],
         [],
     );
 
@@ -46,19 +52,19 @@ export default function VoiceRecorder() {
 
         const regionsPlugin = ws
             .getActivePlugins()
-            .find((p) => p instanceof Regions) as any;
+            .find((p) => p instanceof RegionsPlugin) as any;
 
         if (regionsPlugin) {
             // Initialize region logic and store the API in a ref
-            regionsRef.current = setupRegionManager(ws, regionsPlugin, {
+            regionActions.current = setupRegionManager(ws, regionsPlugin, {
                 loopRegion,
             });
         }
     };
     const handleAddRegion = () => {
         // 4. Use the ref safely in an event handler
-        if (regionsRef.current) {
-            regionsRef.current.instance.addRegion({
+        if (regionActions.current) {
+            regionActions.current.instance.addRegion({
                 start: 6,
                 end: 8,
                 content: 'User Region',
@@ -77,6 +83,13 @@ export default function VoiceRecorder() {
         }
     };
 
+    function handleRegionLoop() {
+        return () => {
+            setLoopRegion(!loopRegion);
+            regionActions.current?.setLoop(!loopRegion);
+        };
+    }
+
     return (
         <div className={'p-4'}>
             <div id="timeline" />
@@ -94,7 +107,7 @@ export default function VoiceRecorder() {
             />
 
             <div style={{ marginTop: '10px' }}>
-                <div className={"my-1 flex justify-between items-center"}>
+                <div className={'my-1 flex items-center justify-between'}>
                     <Button
                         variant={'outline'}
                         onClick={() => wavesurfer?.playPause()}
@@ -105,10 +118,7 @@ export default function VoiceRecorder() {
                     <div>
                         <Checkbox
                             checked={loopRegion}
-                            onClick={() => {
-                                setLoopRegion(!loopRegion);
-                                regionsRef.current.setLoop(!loopRegion);
-                            }}
+                            onClick={handleRegionLoop()}
                         />{' '}
                         Loop Region
                     </div>

@@ -1,4 +1,4 @@
-import WaveSurfer  from 'wavesurfer.js';
+import type WaveSurfer from 'wavesurfer.js';
 
 export const setupRegionManager = (ws: WaveSurfer, regionsPlugin: any, options: any) => {
     let activeRegion: any = null;
@@ -15,7 +15,6 @@ export const setupRegionManager = (ws: WaveSurfer, regionsPlugin: any, options: 
     // Handle Selection & Playback
     regionsPlugin.on('region-clicked', (region: any, e: MouseEvent) => {
         e.stopPropagation();
-        console.log('region clicked', currentOptions)
 
         // Visual feedback: Highlight the active region
         regionsPlugin.getRegions().forEach((r: any) => {
@@ -69,7 +68,7 @@ export const setupRegionManager = (ws: WaveSurfer, regionsPlugin: any, options: 
     // Smart Exit Logic (Stop at end of active region)
     regionsPlugin.on('region-out', (region: any) => {
         if (activeRegion && activeRegion.id === region.id) {
-            if(currentOptions?.loopRegion) {
+            if (currentOptions?.loopRegion) {
                 region.play();
 
                 return;
@@ -81,14 +80,14 @@ export const setupRegionManager = (ws: WaveSurfer, regionsPlugin: any, options: 
 
     // 5. Cleanup: If the user clicks the background, deselect
     ws.on('interaction', () => {
-        console.log('interaction')
+        console.log('interaction');
         activeRegion = null;
         regionsPlugin.getRegions().forEach((r: any) => {
             r.setOptions({ color: 'rgba(100, 149, 237, 0.3)' });
         });
     });
 
-    const manager = {
+    return {
         instance: regionsPlugin,
         setOptions: (newOptions: any) => {
             currentOptions = { ...currentOptions, ...newOptions };
@@ -99,6 +98,4 @@ export const setupRegionManager = (ws: WaveSurfer, regionsPlugin: any, options: 
             currentOptions.loopRegion = shouldLoop;
         },
     };
-
-    return manager;
 };
