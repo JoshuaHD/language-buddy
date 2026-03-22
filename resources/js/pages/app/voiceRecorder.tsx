@@ -1,24 +1,18 @@
 import WavesurferPlayer from '@wavesurfer/react';
 import { PauseIcon, PlayIcon } from 'lucide-react';
 import type { ChangeEvent } from 'react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import Timeline from 'wavesurfer.js/dist/plugins/timeline.esm.js';
 import RecordPlugin from 'wavesurfer.js/plugins/record';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { getCachedRecording, saveRecording } from '@/utils/waveform/audioCache';
 import { setupRecordManager } from '@/utils/waveform/recordManager';
 import { setupRegionManager } from '@/utils/waveform/regionManager';
 
-const audioUrls = [
-    '/audio/oi-bay.mp3',
-    'https://raw.githubusercontent.com/katspaugh/wavesurfer-react/main/examples/audio.wav',
-    '/audio/maayung-buntag.mp3',
-    'https://raw.githubusercontent.com/katspaugh/wavesurfer-react/main/examples/stereo.mp3',
-    'https://raw.githubusercontent.com/katspaugh/wavesurfer-react/main/examples/mono.mp3',
-    'https://raw.githubusercontent.com/katspaugh/wavesurfer-react/main/examples/librivox.mp3',
-];
+const audioUrls = ['/audio/oi-bay.mp3', '/audio/maayung-buntag.mp3'];
 
 const formatTime = (seconds: number) =>
     [seconds / 60, seconds % 60]
@@ -46,7 +40,17 @@ export default function VoiceRecorder() {
         null,
     );
 
-    // 2. Create plugins inside useMemo, but DON'T assign to the ref here
+    // 2. Load cached recording on mount
+    useEffect(() => {
+        getCachedRecording().then((blob) => {
+            if (blob) {
+                const blobUrl = URL.createObjectURL(blob);
+                setUrl(blobUrl);
+            }
+        });
+    }, []);
+
+    // 3. Create plugins inside useMemo, but DON'T assign to the ref here
     const plugins = useMemo(
         () => [
             Timeline.create({ container: '#timeline' }),
@@ -90,6 +94,9 @@ export default function VoiceRecorder() {
                 setUrl(blobUrl);
                 setIsRecording(false);
                 setIsBusy(false);
+
+                // Cache the recording for offline persistence
+                saveRecording(blob).catch(console.error);
             });
         }
     };
@@ -141,8 +148,29 @@ export default function VoiceRecorder() {
         };
     }
 
+    const handleInputFileChange = (
+        e: ChangeEvent<HTMLSelectElement, HTMLSelectElement>,
+    ) => {
+        const value = e.target.value as any;
+
+        if (value === '-1') {
+            getCachedRecording().then((blob) => {
+                if (blob) {
+                    const blobUrl = URL.createObjectURL(blob);
+                    setUrl(blobUrl);
+                }
+            });
+
+            return;
+        }
+
+        const url: string = audioUrls[value];
+        setUrl(url);
+    };
+
     return (
         <div className={'p-4'}>
+            <div>{formatTime(wavesurfer?.getDuration() ?? 0)}</div>
             <div id="timeline" />
             <WavesurferPlayer
                 height={100}
@@ -198,9 +226,21 @@ export default function VoiceRecorder() {
                         opacity: isBusy ? 0.5 : 1,
                     }}
                 >
-                    {isBusy ? 'Wait...' : isRecording ? 'Stop Recording' : 'Start Recording'}
+                    {isBusy
+                        ? 'Wait...'
+                        : isRecording
+                          ? 'Stop Recording'
+                          : 'Start Recording'}
                 </Button>
             </div>
+            <select onChange={handleInputFileChange}>
+                <option value={'-1'}>Local Cache</option>
+                {audioUrls.map((url: string, index: number) => (
+                    <option key={index} value={index}>
+                        {url}
+                    </option>
+                ))}
+            </select>
         </div>
     );
 }

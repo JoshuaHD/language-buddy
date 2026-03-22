@@ -3,6 +3,7 @@ import RecordPlugin from 'wavesurfer.js/plugins/record';
 
 export const setupRecordManager = (ws: WaveSurfer, recordPlugin: any) => {
     let recordingBlob: Blob | null = null;
+    let recordingTime = 0;
 
     // --- Listeners ---
 
@@ -13,7 +14,12 @@ export const setupRecordManager = (ws: WaveSurfer, recordPlugin: any) => {
 
     // Fires periodically while recording
     recordPlugin.on('record-progress', (time: number) => {
-        console.log(`Recording: ${Math.floor(time / 1000)}s`);
+        recordingTime = time;
+        const debug = false;
+
+        if (debug) {
+            console.log(`Recording: ${Math.floor(time / 1000)}s`);
+        }
     });
 
     // --- Exposed Actions ---
@@ -49,6 +55,10 @@ export const setupRecordManager = (ws: WaveSurfer, recordPlugin: any) => {
 
         setDevice: (deviceId: string) => {
             recordPlugin.startRecording({ deviceId });
+        },
+
+        getRecordingTime: () => {
+            return recordingTime;
         },
     };
 };
