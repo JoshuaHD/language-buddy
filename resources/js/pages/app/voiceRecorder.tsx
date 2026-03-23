@@ -8,11 +8,11 @@ import RecordPlugin from 'wavesurfer.js/plugins/record';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AudioFileSelect } from '@/components/voice-recorder/audioFileSelect';
-import { FileDownloadButton } from '@/components/voice-recorder/fileDownloadButton';
-import { getCachedRecording, saveRecording } from '@/utils/waveform/audioCache';
-import { setupRecordManager } from '@/utils/waveform/recordManager';
-import { setupRegionManager } from '@/utils/waveform/regionManager';
 import AudioRateSlider from '@/components/voice-recorder/audioRateSlider';
+import { FileDownloadButton } from '@/components/voice-recorder/fileDownloadButton';
+import RecordAudioButton from '@/components/voice-recorder/recordAudioButton';
+import { getCachedRecording, saveRecording } from '@/utils/waveform/audioCache';
+import { setupRegionManager } from '@/utils/waveform/regionManager';
 
 const audioUrls = ['/audio/oi-bay.mp3', '/audio/maayung-buntag.mp3'];
 
@@ -28,16 +28,17 @@ export default function VoiceRecorder() {
     const [url, setUrl] = useState(audioUrls[0]);
     const [audioRate, setAudioRate] = useState(1);
 
-    const [isRecording, setIsRecording] = useState(false);
-    const [isBusy, setIsBusy] = useState(false);
-
     // 1. Keep a ref to the regions plugin to use in buttons/functions
     const regionActions = useRef<ReturnType<typeof setupRegionManager> | null>(
         null,
     );
-    const recordActions = useRef<ReturnType<typeof setupRecordManager> | null>(
-        null,
-    );
+
+    // Get the record plugin instance from wavesurfer if it's available
+    const recordPlugin = useMemo(() => {
+        return wavesurfer
+            ?.getActivePlugins()
+            .find((p) => p instanceof RecordPlugin);
+    }, [wavesurfer]);
 
     // 2. Load cached recording on mount
     useEffect(() => {
@@ -75,30 +76,15 @@ export default function VoiceRecorder() {
                 loopRegion,
             });
         }
-
-        const recordPlugin = ws
-            .getActivePlugins()
-            .find((p) => p instanceof RecordPlugin);
-
-        if (recordPlugin) {
-            recordActions.current = setupRecordManager(ws, recordPlugin);
-
-            // Sync recording state to React UI
-            recordPlugin.on('record-start', () => {
-                setIsRecording(true);
-                setIsBusy(false);
-            });
-            recordPlugin.on('record-end', (blob: Blob) => {
-                const blobUrl = URL.createObjectURL(blob);
-                setUrl(blobUrl);
-                setIsRecording(false);
-                setIsBusy(false);
-
-                // Cache the recording for offline persistence
-                saveRecording(blob).catch(console.error);
-            });
-        }
     };
+
+    const handleRecordEnd = (blob: Blob) => {
+        const blobUrl = URL.createObjectURL(blob);
+        setUrl(blobUrl);
+        // Cache the recording for offline persistence
+        saveRecording(blob).catch(console.error);
+    };
+
     const handleAddRegion = () => {
         // 4. Use the ref safely in an event handler
         if (regionActions.current) {
@@ -108,25 +94,6 @@ export default function VoiceRecorder() {
                 content: 'User Region',
                 color: 'rgba(255, 165, 0, 0.3)',
             });
-        }
-    };
-
-    const handleToggleRecord = async () => {
-        if (isBusy || !recordActions.current) {
-            return;
-        }
-
-        setIsBusy(true);
-
-        if (isRecording) {
-            recordActions.current.stop();
-        } else {
-            try {
-                await recordActions.current.start();
-            } catch (err) {
-                console.error(err);
-                setIsBusy(false);
-            }
         }
     };
 
@@ -176,7 +143,12 @@ export default function VoiceRecorder() {
                     </div>
                     <div>
                         Playback Speed: ({audioRate})
-                        <AudioRateSlider wavesurfer={wavesurfer} onChange={(newRate: number) => setAudioRate(newRate)}/>
+                        <AudioRateSlider
+                            wavesurfer={wavesurfer}
+                            onChange={(newRate: number) =>
+                                setAudioRate(newRate)
+                            }
+                        />
                     </div>
                 </div>
                 <div className={'flex items-center gap-1'}>
@@ -184,21 +156,10 @@ export default function VoiceRecorder() {
                         Add Region
                     </Button>
 
-                    <Button
-                        onClick={handleToggleRecord}
-                        disabled={isBusy}
-                        style={{
-                            backgroundColor: isRecording ? 'red' : 'black',
-                            color: 'white',
-                            opacity: isBusy ? 0.5 : 1,
-                        }}
-                    >
-                        {isBusy
-                            ? 'Wait...'
-                            : isRecording
-                              ? 'Stop Recording'
-                              : 'Start Recording'}
-                    </Button>
+                    <RecordAudioButton
+                        recordPlugin={recordPlugin}
+                        onRecordEnd={handleRecordEnd}
+                    />
                     <FileDownloadButton url={url} />
                 </div>
             </div>
