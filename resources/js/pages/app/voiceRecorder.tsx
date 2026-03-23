@@ -1,6 +1,6 @@
 import WavesurferPlayer from '@wavesurfer/react';
 import { PauseIcon, PlayIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import Timeline from 'wavesurfer.js/dist/plugins/timeline.esm.js';
@@ -22,23 +22,36 @@ const formatTime = (seconds: number) =>
         .join(':');
 
 export default function VoiceRecorder() {
+    const initialLoopRegion = true;
     const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [loopRegion, setLoopRegion] = useState(true);
+    const [loopRegion, setLoopRegion] = useState(initialLoopRegion);
     const [url, setUrl] = useState(audioUrls[0]);
     const [audioRate, setAudioRate] = useState(1);
 
-    // 1. Keep a ref to the regions plugin to use in buttons/functions
-    const regionActions = useRef<ReturnType<typeof setupRegionManager> | null>(
-        null,
-    );
-
     // Get the record plugin instance from wavesurfer if it's available
     const recordPlugin = useMemo(() => {
-        return wavesurfer
-            ?.getActivePlugins()
-            .find((p) => p instanceof RecordPlugin);
+        return wavesurfer?.getActivePlugins().find((p) => p instanceof RecordPlugin);
     }, [wavesurfer]);
+
+    const regionsPlugin = useMemo(() => {
+        return wavesurfer?.getActivePlugins().find((p) => p instanceof RegionsPlugin) as any;
+    }, [wavesurfer]);
+
+    const regionActions = useMemo(() => {
+        if (!wavesurfer || !regionsPlugin) {
+            return null;
+        }
+
+        return setupRegionManager(wavesurfer, regionsPlugin, {
+            loopRegion: initialLoopRegion,
+        });
+    }, [wavesurfer, regionsPlugin, initialLoopRegion]);
+
+    // Keep loopRegion in sync with the manager
+    useEffect(() => {
+        regionActions?.setLoop(loopRegion);
+    }, [loopRegion, regionActions]);
 
     // 2. Load cached recording on mount
     useEffect(() => {
@@ -65,17 +78,6 @@ export default function VoiceRecorder() {
 
     const onReady = (ws: WaveSurfer) => {
         setWavesurfer(ws);
-
-        const regionsPlugin = ws
-            .getActivePlugins()
-            .find((p) => p instanceof RegionsPlugin) as any;
-
-        if (regionsPlugin) {
-            // Initialize region logic and store the API in a ref
-            regionActions.current = setupRegionManager(ws, regionsPlugin, {
-                loopRegion,
-            });
-        }
     };
 
     const handleRecordEnd = (blob: Blob) => {
@@ -87,8 +89,8 @@ export default function VoiceRecorder() {
 
     const handleAddRegion = () => {
         // 4. Use the ref safely in an event handler
-        if (regionActions.current) {
-            regionActions.current.instance.addRegion({
+        if (regionActions) {
+            regionActions.instance.addRegion({
                 start: 6,
                 end: 8,
                 content: 'User Region',
@@ -100,7 +102,6 @@ export default function VoiceRecorder() {
     function handleRegionLoop() {
         return () => {
             setLoopRegion(!loopRegion);
-            regionActions.current?.setLoop(!loopRegion);
         };
     }
 
