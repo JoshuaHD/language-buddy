@@ -1,6 +1,7 @@
 import type WaveSurfer from 'wavesurfer.js';
+import type RegionsPlugin from 'wavesurfer.js/plugins/regions';
 
-export const setupRegionManager = (ws: WaveSurfer, regionsPlugin: any, options: any) => {
+export const setupRegionManager = (ws: WaveSurfer, regionsPlugin: RegionsPlugin, options: any) => {
     let activeRegion: any = null;
 
     let currentOptions = { ...options };
