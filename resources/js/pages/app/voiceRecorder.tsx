@@ -11,6 +11,7 @@ import { AudioFileSelect } from '@/components/voice-recorder/audioFileSelect';
 import AudioRateSlider from '@/components/voice-recorder/audioRateSlider';
 import { FileDownloadButton } from '@/components/voice-recorder/fileDownloadButton';
 import RecordAudioButton from '@/components/voice-recorder/recordAudioButton';
+import RegionEditor from '@/components/voice-recorder/regionEditor';
 import { getCachedRecording, saveRecording } from '@/utils/waveform/audioCache';
 import { setupRegionManager } from '@/utils/waveform/regionManager';
 
@@ -23,11 +24,14 @@ const formatTime = (seconds: number) =>
 
 export default function VoiceRecorder() {
     const initialLoopRegion = true;
+    const initialAutoplay = true;
     const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [loopRegion, setLoopRegion] = useState(initialLoopRegion);
+    const [autoplay, setAutoplay] = useState(initialAutoplay);
     const [url, setUrl] = useState(audioUrls[0]);
     const [audioRate, setAudioRate] = useState(1);
+    const [regions, setRegions] = useState<any[]>([]);
 
     // Get the record plugin instance from wavesurfer if it's available
     const recordPlugin = useMemo(() => {
@@ -45,13 +49,19 @@ export default function VoiceRecorder() {
 
         return setupRegionManager(wavesurfer, regionsPlugin, {
             loopRegion: initialLoopRegion,
+            autoPlay: initialAutoplay,
+            onRegionsChange: (newRegions: any[]) => setRegions([...newRegions]),
         });
-    }, [wavesurfer, regionsPlugin, initialLoopRegion]);
+    }, [wavesurfer, regionsPlugin, initialLoopRegion, initialAutoplay]);
 
     // Keep loopRegion in sync with the manager
     useEffect(() => {
         regionActions?.setLoop(loopRegion);
     }, [loopRegion, regionActions]);
+
+    useEffect(() => {
+        regionActions?.setAutoplay(autoplay);
+    }, [autoplay, regionActions]);
 
     // 2. Load cached recording on mount
     useEffect(() => {
@@ -87,22 +97,12 @@ export default function VoiceRecorder() {
         saveRecording(blob).catch(console.error);
     };
 
-    const handleAddRegion = () => {
-        // 4. Use the ref safely in an event handler
-        if (regionActions) {
-            regionActions.instance.addRegion({
-                start: 6,
-                end: 8,
-                content: 'User Region',
-                color: 'rgba(255, 165, 0, 0.3)',
-            });
-        }
-    };
-
     function handleRegionLoop() {
-        return () => {
             setLoopRegion(!loopRegion);
-        };
+    }
+
+    function handleAutoplay() {
+        setAutoplay(!autoplay);
     }
 
     return (
@@ -138,9 +138,16 @@ export default function VoiceRecorder() {
                     <div>
                         <Checkbox
                             checked={loopRegion}
-                            onClick={handleRegionLoop()}
+                            onClick={handleRegionLoop}
                         />{' '}
                         Loop Region
+                    </div>
+                    <div>
+                        <Checkbox
+                            checked={autoplay}
+                            onClick={handleAutoplay}
+                        />{' '}
+                        Autoplay
                     </div>
                     <div>
                         Playback Speed: ({audioRate})
@@ -152,22 +159,25 @@ export default function VoiceRecorder() {
                         />
                     </div>
                 </div>
-                <div className={'flex items-center gap-1'}>
-                    <Button variant={'outline'} onClick={handleAddRegion}>
-                        Add Region
-                    </Button>
-
+                <div className={'flex items-center justify-between gap-1'}>
                     <RecordAudioButton
                         recordPlugin={recordPlugin}
                         onRecordEnd={handleRecordEnd}
                     />
+
+                    <AudioFileSelect
+                        audioUrls={audioUrls}
+                        updateUrl={(url) => setUrl(url)}
+                    />
+
                     <FileDownloadButton url={url} />
                 </div>
             </div>
-            <AudioFileSelect
-                audioUrls={audioUrls}
-                updateUrl={(url) => setUrl(url)}
-            />
+
+            <div className="mt-4 space-y-1">
+                <h3 className="text-sm font-bold">Regions:</h3>
+                <RegionEditor regions={regions} regionActions={regionActions} />
+            </div>
         </div>
     );
 }
