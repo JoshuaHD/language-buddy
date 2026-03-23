@@ -8,6 +8,8 @@ import Timeline from 'wavesurfer.js/dist/plugins/timeline.esm.js';
 import RecordPlugin from 'wavesurfer.js/plugins/record';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { AudioFileSelect } from '@/components/voice-recorder/audioFileSelect';
+import { FileDownloadButton } from '@/components/voice-recorder/fileDownloadButton';
 import { getCachedRecording, saveRecording } from '@/utils/waveform/audioCache';
 import { setupRecordManager } from '@/utils/waveform/recordManager';
 import { setupRegionManager } from '@/utils/waveform/regionManager';
@@ -19,9 +21,6 @@ const formatTime = (seconds: number) =>
         .map((v) => `0${Math.floor(v)}`.slice(-2))
         .join(':');
 
-type VoiceRecorder = {
-    test: string;
-};
 export default function VoiceRecorder() {
     const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -148,29 +147,13 @@ export default function VoiceRecorder() {
         };
     }
 
-    const handleInputFileChange = (
-        e: ChangeEvent<HTMLSelectElement, HTMLSelectElement>,
-    ) => {
-        const value = e.target.value as any;
-
-        if (value === '-1') {
-            getCachedRecording().then((blob) => {
-                if (blob) {
-                    const blobUrl = URL.createObjectURL(blob);
-                    setUrl(blobUrl);
-                }
-            });
-
-            return;
-        }
-
-        const url: string = audioUrls[value];
-        setUrl(url);
-    };
-
     return (
         <div className={'p-4'}>
-            <div>{formatTime(wavesurfer?.getDuration() ?? 0)}</div>
+            <div className="mb-2 flex items-center justify-between">
+                <div className="text-sm font-medium text-muted-foreground">
+                    Duration: {formatTime(wavesurfer?.getDuration() ?? 0)}
+                </div>
+            </div>
             <div id="timeline" />
             <WavesurferPlayer
                 height={100}
@@ -213,34 +196,33 @@ export default function VoiceRecorder() {
                         />
                     </div>
                 </div>
-                <Button variant={'outline'} onClick={handleAddRegion}>
-                    Add Region
-                </Button>
+                <div className={'flex items-center gap-1'}>
+                    <Button variant={'outline'} onClick={handleAddRegion}>
+                        Add Region
+                    </Button>
 
-                <Button
-                    onClick={handleToggleRecord}
-                    disabled={isBusy}
-                    style={{
-                        backgroundColor: isRecording ? 'red' : 'black',
-                        color: 'white',
-                        opacity: isBusy ? 0.5 : 1,
-                    }}
-                >
-                    {isBusy
-                        ? 'Wait...'
-                        : isRecording
-                          ? 'Stop Recording'
-                          : 'Start Recording'}
-                </Button>
+                    <Button
+                        onClick={handleToggleRecord}
+                        disabled={isBusy}
+                        style={{
+                            backgroundColor: isRecording ? 'red' : 'black',
+                            color: 'white',
+                            opacity: isBusy ? 0.5 : 1,
+                        }}
+                    >
+                        {isBusy
+                            ? 'Wait...'
+                            : isRecording
+                              ? 'Stop Recording'
+                              : 'Start Recording'}
+                    </Button>
+                    <FileDownloadButton url={url} />
+                </div>
             </div>
-            <select onChange={handleInputFileChange}>
-                <option value={'-1'}>Local Cache</option>
-                {audioUrls.map((url: string, index: number) => (
-                    <option key={index} value={index}>
-                        {url}
-                    </option>
-                ))}
-            </select>
+            <AudioFileSelect
+                audioUrls={audioUrls}
+                updateUrl={(url) => setUrl(url)}
+            />
         </div>
     );
 }
