@@ -1,6 +1,5 @@
 import WavesurferPlayer from '@wavesurfer/react';
 import { PauseIcon, PlayIcon } from 'lucide-react';
-import type { ChangeEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
@@ -13,6 +12,7 @@ import { FileDownloadButton } from '@/components/voice-recorder/fileDownloadButt
 import { getCachedRecording, saveRecording } from '@/utils/waveform/audioCache';
 import { setupRecordManager } from '@/utils/waveform/recordManager';
 import { setupRegionManager } from '@/utils/waveform/regionManager';
+import AudioRateSlider from '@/components/voice-recorder/audioRateSlider';
 
 const audioUrls = ['/audio/oi-bay.mp3', '/audio/maayung-buntag.mp3'];
 
@@ -25,8 +25,8 @@ export default function VoiceRecorder() {
     const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [loopRegion, setLoopRegion] = useState(true);
-    const [audioRate, setAudioRate] = useState(1);
     const [url, setUrl] = useState(audioUrls[0]);
+    const [audioRate, setAudioRate] = useState(1);
 
     const [isRecording, setIsRecording] = useState(false);
     const [isBusy, setIsBusy] = useState(false);
@@ -111,16 +111,6 @@ export default function VoiceRecorder() {
         }
     };
 
-    const handleAudioRateChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const rate = e.target.valueAsNumber;
-
-        setAudioRate(rate);
-
-        if (wavesurfer) {
-            wavesurfer.setPlaybackRate(rate, true);
-        }
-    };
-
     const handleToggleRecord = async () => {
         if (isBusy || !recordActions.current) {
             return;
@@ -186,14 +176,7 @@ export default function VoiceRecorder() {
                     </div>
                     <div>
                         Playback Speed: ({audioRate})
-                        <input
-                            value={audioRate}
-                            type={'range'}
-                            min={'0.25'}
-                            max={'1.5'}
-                            step={'0.25'}
-                            onChange={handleAudioRateChange}
-                        />
+                        <AudioRateSlider wavesurfer={wavesurfer} onChange={(newRate: number) => setAudioRate(newRate)}/>
                     </div>
                 </div>
                 <div className={'flex items-center gap-1'}>
