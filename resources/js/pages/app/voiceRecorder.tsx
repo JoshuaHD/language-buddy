@@ -1,7 +1,18 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { MicIcon, PlayCircleIcon, PlusIcon } from 'lucide-react';
+import {
+    MicIcon,
+    MoreVertical,
+    PlayCircleIcon,
+    PlusIcon,
+    Trash2,
+} from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { storeRecording, storeSentence, updateRecording } from '@/actions/App/Http/Controllers/VoiceRecorderController';
+import {
+    destroyRecording,
+    storeRecording,
+    storeSentence,
+    updateRecording,
+} from '@/actions/App/Http/Controllers/VoiceRecorderController';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -19,6 +30,12 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -106,18 +123,34 @@ export default function VoiceRecorderPage({
         const formData = new FormData();
         formData.append('audio', blob, 'recording.webm');
 
-        router.post(
-            storeRecording(selectedSentence.id),
-            formData,
-            {
+        if (selectedRecording) {
+            formData.append('_method', 'PATCH');
+            router.post(updateRecording(selectedRecording.id).url, formData, {
+                forceFormData: true,
+                onSuccess: () => {
+                    setSelectedRecording(null);
+                },
+            });
+        } else {
+            router.post(storeRecording(selectedSentence.id).url, formData, {
                 forceFormData: true,
                 onSuccess: () => {
                     setIsRecordingNew(false);
-                    // Optionally select the new recording?
-                    // We'd need to find it from the updated props.
                 },
-            },
-        );
+            });
+        }
+    };
+
+    const handleDeleteRecording = () => {
+        if (!selectedRecording) return;
+
+        if (confirm('Are you sure you want to delete this recording?')) {
+            router.delete(destroyRecording(selectedRecording.id).url, {
+                onSuccess: () => {
+                    setSelectedRecording(null);
+                },
+            });
+        }
     };
 
     const handleRegionsChange = useCallback(
@@ -291,7 +324,11 @@ export default function VoiceRecorderPage({
                     {selectedSentence ? (
                         <>
                             <div className={'block sm:hidden'}>
-                                <Button onClick={() => setSelectedSentence(null)}>back</Button>
+                                <Button
+                                    onClick={() => setSelectedSentence(null)}
+                                >
+                                    back
+                                </Button>
                             </div>
                             <Card>
                                 <CardHeader>
@@ -370,10 +407,38 @@ export default function VoiceRecorderPage({
                             {(isRecordingNew || selectedRecording) && (
                                 <Card className="flex flex-1 flex-col">
                                     <CardHeader>
-                                        <CardTitle>
-                                            {isRecordingNew
-                                                ? 'New Recording'
-                                                : `Editing Recording #${selectedRecording?.id}`}
+                                        <CardTitle className="flex items-center justify-between">
+                                            <span>
+                                                {isRecordingNew
+                                                    ? 'New Recording'
+                                                    : `Editing Recording #${selectedRecording?.id}`}
+                                            </span>
+
+                                            {selectedRecording && (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger
+                                                        asChild
+                                                    >
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                        >
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            variant="destructive"
+                                                            onClick={
+                                                                handleDeleteRecording
+                                                            }
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            Delete Recording
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="flex-1">
@@ -394,7 +459,6 @@ export default function VoiceRecorderPage({
                                             }
                                         />
                                         <div className="mt-4 flex justify-end">
-
                                             <Button
                                                 variant="ghost"
                                                 onClick={() => {
@@ -410,7 +474,7 @@ export default function VoiceRecorderPage({
                             )}
                         </>
                     ) : (
-                        <div className="hidden p-4 h-full items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground sm:block">
+                        <div className="hidden h-full items-center justify-center rounded-lg border-2 border-dashed p-4 text-muted-foreground sm:block">
                             Select a sentence to start
                         </div>
                     )}

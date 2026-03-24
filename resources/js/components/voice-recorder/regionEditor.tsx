@@ -4,11 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 type RegionEditor = {
-    regions: any[],
-    regionActions: any
-}
-export default function RegionEditor ({regions, regionActions}: RegionEditor) {
-
+    regions: any[];
+    regionActions: any;
+};
+export default function RegionEditor({ regions, regionActions }: RegionEditor) {
     return (
         <>
             {regions
@@ -67,7 +66,7 @@ export default function RegionEditor ({regions, regionActions}: RegionEditor) {
                                 {(region.end - region.start).toFixed(2)}s
                             </span>
                             <Input
-                                value={ ''}
+                                value={''}
                                 onChange={(
                                     e: ChangeEvent<
                                         HTMLInputElement,
@@ -97,10 +96,14 @@ export default function RegionEditor ({regions, regionActions}: RegionEditor) {
                                     color={region.drag ? 'gray' : 'red'}
                                 />
                             </Button>
-                            <Button disabled={!region.drag} onClick={() =>{
-                                region.remove();
-
-                            }}><TrashIcon /></Button>
+                            <Button
+                                disabled={!region.drag}
+                                onClick={() => {
+                                    region.remove();
+                                }}
+                            >
+                                <TrashIcon />
+                            </Button>
                         </div>
                     );
                 })}

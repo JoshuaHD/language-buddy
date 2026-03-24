@@ -24,7 +24,12 @@ interface WaveformEditorProps {
     onRegionsChange?: (regions: any[]) => void;
 }
 
-export default function WaveformEditor({ url, onRecordEnd, initialRegions = [], onRegionsChange }: WaveformEditorProps) {
+export default function WaveformEditor({
+    url,
+    onRecordEnd,
+    initialRegions = [],
+    onRegionsChange,
+}: WaveformEditorProps) {
     const initialLoopRegion = true;
     const initialAutoplay = true;
     const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
@@ -37,13 +42,25 @@ export default function WaveformEditor({ url, onRecordEnd, initialRegions = [], 
     const [audioRate, setAudioRate] = useState(1);
     const [regions, setRegions] = useState<any[]>(initialRegions);
 
+    const isDirty = useMemo(() => {
+        const audioChanged =
+            usedUrl !== (url ?? '/audio/100-milliseconds-of-silence.ogg');
+        const regionsChanged =
+            JSON.stringify(regions) !== JSON.stringify(initialRegions);
+        return audioChanged || regionsChanged;
+    }, [usedUrl, regions, initialRegions, url]);
+
     // Get the record plugin instance from wavesurfer if it's available
     const recordPlugin = useMemo(() => {
-        return wavesurfer?.getActivePlugins().find((p) => p instanceof RecordPlugin);
+        return wavesurfer
+            ?.getActivePlugins()
+            .find((p) => p instanceof RecordPlugin);
     }, [wavesurfer]);
 
     const regionsPlugin = useMemo(() => {
-        return wavesurfer?.getActivePlugins().find((p) => p instanceof RegionsPlugin) as any;
+        return wavesurfer
+            ?.getActivePlugins()
+            .find((p) => p instanceof RegionsPlugin) as any;
     }, [wavesurfer]);
 
     const regionActions = useMemo(() => {
@@ -59,7 +76,13 @@ export default function WaveformEditor({ url, onRecordEnd, initialRegions = [], 
                 onRegionsChange?.([...newRegions]);
             },
         });
-    }, [wavesurfer, regionsPlugin, initialLoopRegion, initialAutoplay, onRegionsChange]);
+    }, [
+        wavesurfer,
+        regionsPlugin,
+        initialLoopRegion,
+        initialAutoplay,
+        onRegionsChange,
+    ]);
 
     // Keep loopRegion in sync with the manager
     useEffect(() => {
@@ -99,11 +122,9 @@ export default function WaveformEditor({ url, onRecordEnd, initialRegions = [], 
     function handleRecordEnd(blob: Blob) {
         const blobUrl = URL.createObjectURL(blob);
         setUsedUrl(blobUrl);
-
-
     }
 
-    async function handleSubmitRecording () {
+    async function handleSubmitRecording() {
         const response = await fetch(usedUrl);
 
         const blob = await response.blob();
@@ -173,7 +194,9 @@ export default function WaveformEditor({ url, onRecordEnd, initialRegions = [], 
                         recordPlugin={recordPlugin}
                         onRecordEnd={handleRecordEnd}
                     />
-                    <Button onClick={handleSubmitRecording}>Save</Button>
+                    <Button onClick={handleSubmitRecording} disabled={!isDirty}>
+                        Save
+                    </Button>
                 </div>
             </div>
 

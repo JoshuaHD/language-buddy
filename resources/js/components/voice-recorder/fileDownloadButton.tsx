@@ -2,9 +2,9 @@ import { DownloadIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type FileDownloadButton = {
-    url: string
-}
-export function FileDownloadButton({url}: FileDownloadButton) {
+    url: string;
+};
+export function FileDownloadButton({ url }: FileDownloadButton) {
     const handleDownload = () => {
         const link = document.createElement('a');
         link.href = url;

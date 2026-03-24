@@ -5,7 +5,7 @@ type AudioFileSelect = {
     audioUrls: string[];
     updateUrl: (url: string) => void;
 };
-export function AudioFileSelect({updateUrl, audioUrls}: AudioFileSelect) {
+export function AudioFileSelect({ updateUrl, audioUrls }: AudioFileSelect) {
     const onChange = (e: ChangeEvent<HTMLSelectElement, HTMLSelectElement>) => {
         const value = e.target.value as any;
 
@@ -28,7 +28,9 @@ export function AudioFileSelect({updateUrl, audioUrls}: AudioFileSelect) {
         <select onChange={onChange}>
             <option value={'-1'}>Local Cache</option>
             {audioUrls.map((url: string, index: number) => (
-                <option key={`o-${index}`} value={index}>{url}</option>
+                <option key={`o-${index}`} value={index}>
+                    {url}
+                </option>
             ))}
         </select>
     );

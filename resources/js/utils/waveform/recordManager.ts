@@ -1,7 +1,10 @@
 import type WaveSurfer from 'wavesurfer.js';
 import RecordPlugin from 'wavesurfer.js/plugins/record';
 
-export const setupRecordManager = (ws: WaveSurfer, recordPlugin: RecordPlugin) => {
+export const setupRecordManager = (
+    ws: WaveSurfer,
+    recordPlugin: RecordPlugin,
+) => {
     let recordingBlob: Blob | null = null;
     let recordingTime = 0;
 

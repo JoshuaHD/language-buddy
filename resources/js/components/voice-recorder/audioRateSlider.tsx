@@ -1,12 +1,15 @@
-import type { ChangeEvent} from 'react';
+import type { ChangeEvent } from 'react';
 import { useState } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
 
 type AudioRateSlider = {
-    wavesurfer: WaveSurfer | null,
-    onChange: (newRate: number) => void
-}
-export default function AudioRateSlider({wavesurfer, onChange}: AudioRateSlider) {
+    wavesurfer: WaveSurfer | null;
+    onChange: (newRate: number) => void;
+};
+export default function AudioRateSlider({
+    wavesurfer,
+    onChange,
+}: AudioRateSlider) {
     const [audioRate, setAudioRate] = useState(wavesurfer?.getPlaybackRate());
     const handleAudioRateChange = (e: ChangeEvent<HTMLInputElement>) => {
         const rate = e.target.valueAsNumber;

@@ -12,20 +12,12 @@ export default function HomePage({ canRegister }: HomePage) {
     return (
         <div>
             {auth.user ? (
-                <LinkButton
-                    href={dashboard()}
-                >
-                    Dashboard
-                </LinkButton>
+                <LinkButton href={dashboard()}>Dashboard</LinkButton>
             ) : (
                 <>
                     <LinkButton href={login()}>Login</LinkButton>
                     {canRegister && (
-                        <LinkButton
-                            href={register()}
-                        >
-                            Register
-                        </LinkButton>
+                        <LinkButton href={register()}>Register</LinkButton>
                     )}
                 </>
             )}

@@ -3,10 +3,10 @@ import type RegionsPlugin from 'wavesurfer.js/plugins/regions';
 import type { Region } from 'wavesurfer.js/plugins/regions';
 
 type RegionManagerOptions = {
-    loopRegion: boolean,
-    onRegionsChange: (newRegions: Region[] ) => void,
-    autoPlay: boolean
-}
+    loopRegion: boolean;
+    onRegionsChange: (newRegions: Region[]) => void;
+    autoPlay: boolean;
+};
 export const setupRegionManager = (
     ws: WaveSurfer,
     regionsPlugin: RegionsPlugin,
@@ -72,7 +72,7 @@ export const setupRegionManager = (
 
         activeRegion = region;
 
-        if(currentOptions.autoPlay){
+        if (currentOptions.autoPlay) {
             region.play();
         }
 
@@ -81,10 +81,14 @@ export const setupRegionManager = (
 
     // Optional: If you want it to play immediately after they finish drawing
     regionsPlugin.on('region-updated', (region: any) => {
-        console.log("update")
+        console.log('update');
 
         // This fires after the mouse is released
-        if (currentOptions.autoPlay && activeRegion && activeRegion.id === region.id) {
+        if (
+            currentOptions.autoPlay &&
+            activeRegion &&
+            activeRegion.id === region.id
+        ) {
             region.play();
         }
 
@@ -104,7 +108,7 @@ export const setupRegionManager = (
                 return;
             }
 
-            activeRegion = null
+            activeRegion = null;
         }
     });
 

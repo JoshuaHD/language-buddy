@@ -6,6 +6,7 @@ use App\Models\Language;
 use App\Models\Recording;
 use App\Models\Sentence;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -51,10 +52,34 @@ class VoiceRecorderController extends Controller
     public function updateRecording(Request $request, Recording $recording)
     {
         $validated = $request->validate([
-            'options' => 'required|array',
+            'options' => 'nullable|array',
+            'audio' => 'nullable|file|mimes:mp3,wav,ogg,webm',
         ]);
 
-        $recording->update($validated);
+        if ($request->hasFile('audio')) {
+            // Delete old file if it exists
+            $oldPath = str_replace('/storage/', '', $recording->path);
+            Storage::disk('public')->delete($oldPath);
+
+            $path = $request->file('audio')->store('recordings', 'public');
+            $recording->path = '/storage/'.$path;
+        }
+
+        if ($request->has('options')) {
+            $recording->options = $validated['options'];
+        }
+
+        $recording->save();
+
+        return back();
+    }
+
+    public function destroyRecording(Recording $recording)
+    {
+        $oldPath = str_replace('/storage/', '', $recording->path);
+        Storage::disk('public')->delete($oldPath);
+
+        $recording->delete();
 
         return back();
     }
