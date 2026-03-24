@@ -142,7 +142,9 @@ export default function VoiceRecorderPage({
     };
 
     const handleDeleteRecording = () => {
-        if (!selectedRecording) return;
+        if (!selectedRecording) {
+            return;
+        }
 
         if (confirm('Are you sure you want to delete this recording?')) {
             router.delete(destroyRecording(selectedRecording.id).url, {
