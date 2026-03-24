@@ -50,14 +50,20 @@ class VoiceRecorderController extends Controller
     {
         $request->validate([
             'audio' => 'required|file|mimes:mp3,wav,ogg,webm',
+            'options' => 'nullable|array',
         ]);
 
         $path = $request->file('audio')->store('recordings', 'public');
 
+        $options = $request->input('options', []);
+        if (isset($options['regions']) && is_string($options['regions'])) {
+            $options['regions'] = json_decode($options['regions'], true);
+        }
+
         $sentence->recordings()->create([
             'user_id' => $request->user()->id,
             'path' => '/storage/'.$path,
-            'options' => [],
+            'options' => $options,
         ]);
 
         return back();

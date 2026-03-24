@@ -19,7 +19,7 @@ const formatTime = (seconds: number) =>
 
 interface WaveformEditorProps {
     url?: string;
-    onRecordEnd: (blob: Blob) => void;
+    onRecordEnd: (blob: Blob, regions: any[]) => void;
     initialRegions?: any[];
     onRegionsChange?: (regions: any[]) => void;
 }
@@ -47,6 +47,7 @@ export default function WaveformEditor({
             usedUrl !== (url ?? '/audio/100-milliseconds-of-silence.ogg');
         const regionsChanged =
             JSON.stringify(regions) !== JSON.stringify(initialRegions);
+
         return audioChanged || regionsChanged;
     }, [usedUrl, regions, initialRegions, url]);
 
@@ -129,7 +130,7 @@ export default function WaveformEditor({
 
         const blob = await response.blob();
 
-        onRecordEnd(blob);
+        onRecordEnd(blob, regions);
     }
 
     return (

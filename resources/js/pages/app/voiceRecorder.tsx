@@ -116,7 +116,7 @@ export default function VoiceRecorderPage({
         });
     };
 
-    const handleRecordEnd = (blob: Blob) => {
+    const handleRecordEnd = (blob: Blob, regions: any[]) => {
         if (!selectedSentence) {
             return;
         }
@@ -133,6 +133,16 @@ export default function VoiceRecorderPage({
                 },
             });
         } else {
+            // Simplify regions for database storage
+            const simplifiedRegions = regions.map((r) => ({
+                start: r.start,
+                end: r.end,
+                content: typeof r.content === 'string' ? r.content : '',
+                color: r.color,
+            }));
+
+            formData.append('options[regions]', JSON.stringify(simplifiedRegions));
+
             router.post(storeRecording(selectedSentence.id).url, formData, {
                 forceFormData: true,
                 onSuccess: () => {
