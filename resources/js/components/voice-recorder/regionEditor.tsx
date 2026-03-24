@@ -67,7 +67,7 @@ export default function RegionEditor ({regions, regionActions}: RegionEditor) {
                                 {(region.end - region.start).toFixed(2)}s
                             </span>
                             <Input
-                                value={region.getContent()?.trimStart() || ''}
+                                value={ ''}
                                 onChange={(
                                     e: ChangeEvent<
                                         HTMLInputElement,
@@ -80,6 +80,7 @@ export default function RegionEditor ({regions, regionActions}: RegionEditor) {
                                     region.setOptions({
                                         content: value || ' ',
                                     });
+                                    regionActions?.sync();
                                 }}
                             />
                             <Button
