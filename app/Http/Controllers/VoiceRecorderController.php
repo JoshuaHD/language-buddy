@@ -32,6 +32,20 @@ class VoiceRecorderController extends Controller
         return back();
     }
 
+    public function destroySentence(Sentence $sentence)
+    {
+        foreach ($sentence->recordings as $recording) {
+            $oldPath = str_replace('/storage/', '', $recording->path);
+            Storage::disk('public')->delete($oldPath);
+
+            $recording->delete();
+        }
+
+        $sentence->delete();
+
+        return back();
+    }
+
     public function storeRecording(Request $request, Sentence $sentence)
     {
         $request->validate([

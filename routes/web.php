@@ -13,6 +13,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/app/record', [VoiceRecorderController::class, 'index'])->name('app.record');
     Route::post('/app/record/sentences', [VoiceRecorderController::class, 'storeSentence'])->name('app.record.sentences.store');
+    Route::delete('/app/record/sentences/{sentence}', [VoiceRecorderController::class, 'destroySentence'])->name('app.record.sentences.destroy');
     Route::post('/app/record/sentences/{sentence}/recordings', [VoiceRecorderController::class, 'storeRecording'])->name('app.record.recordings.store');
     Route::patch('/app/record/recordings/{recording}', [VoiceRecorderController::class, 'updateRecording'])->name('app.record.recordings.update');
     Route::delete('/app/record/recordings/{recording}', [VoiceRecorderController::class, 'destroyRecording'])->name('app.record.recordings.destroy');

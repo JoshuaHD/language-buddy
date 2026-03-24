@@ -9,6 +9,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     destroyRecording,
+    destroySentence,
     storeRecording,
     storeSentence,
     updateRecording,
@@ -150,6 +151,20 @@ export default function VoiceRecorderPage({
             router.delete(destroyRecording(selectedRecording.id).url, {
                 onSuccess: () => {
                     setSelectedRecording(null);
+                },
+            });
+        }
+    };
+
+    const handleDeleteSentence = () => {
+        if (!selectedSentence) {
+            return;
+        }
+
+        if (confirm('Are you sure you want to delete this sentence?')) {
+            router.delete(destroySentence(selectedSentence.id).url, {
+                onSuccess: () => {
+                    setSelectedSentence(null);
                 },
             });
         }
@@ -334,7 +349,32 @@ export default function VoiceRecorderPage({
                             </div>
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Selected Sentence</CardTitle>
+                                    <CardTitle className={"flex items-center justify-between"}>
+                                        <span>Selected Sentence</span>
+                                        {selectedSentence && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                    >
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem
+                                                        variant="destructive"
+                                                        onClick={
+                                                            handleDeleteSentence
+                                                        }
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Delete Sentence
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
+                                    </CardTitle>
                                     <CardDescription>
                                         {selectedSentence.content}
                                     </CardDescription>
