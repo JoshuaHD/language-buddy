@@ -124,6 +124,16 @@ export default function VoiceRecorderPage({
         const formData = new FormData();
         formData.append('audio', blob, 'recording.webm');
 
+        // Simplify regions for database storage
+        const simplifiedRegions = regions.map((r) => ({
+            start: r.start,
+            end: r.end,
+            content: typeof r.content === 'string' ? r.content : '',
+            color: r.color,
+        }));
+
+        formData.append('options[regions]', JSON.stringify(simplifiedRegions));
+
         if (selectedRecording) {
             formData.append('_method', 'PATCH');
             router.post(updateRecording(selectedRecording.id).url, formData, {
@@ -133,16 +143,6 @@ export default function VoiceRecorderPage({
                 },
             });
         } else {
-            // Simplify regions for database storage
-            const simplifiedRegions = regions.map((r) => ({
-                start: r.start,
-                end: r.end,
-                content: typeof r.content === 'string' ? r.content : '',
-                color: r.color,
-            }));
-
-            formData.append('options[regions]', JSON.stringify(simplifiedRegions));
-
             router.post(storeRecording(selectedSentence.id).url, formData, {
                 forceFormData: true,
                 onSuccess: () => {

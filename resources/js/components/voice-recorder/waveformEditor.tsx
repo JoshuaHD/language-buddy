@@ -40,13 +40,31 @@ export default function WaveformEditor({
     const [loopRegion, setLoopRegion] = useState(initialLoopRegion);
     const [autoplay, setAutoplay] = useState(initialAutoplay);
     const [audioRate, setAudioRate] = useState(1);
-    const [regions, setRegions] = useState<any[]>(initialRegions);
+    const [regions, setRegions] = useState<any[]>([]);
+    const [regionActions, setRegionActions] = useState<any>(null);
 
     const isDirty = useMemo(() => {
         const audioChanged =
             usedUrl !== (url ?? '/audio/100-milliseconds-of-silence.ogg');
+
+        // Extract relevant properties for comparison
+        const currentRegionsData = regions.map((r) => ({
+            start: r.start,
+            end: r.end,
+            content: typeof r.content === 'string' ? r.content : '',
+            color: r.color,
+        }));
+
+        const initialRegionsData = initialRegions.map((r) => ({
+            start: r.start,
+            end: r.end,
+            content: r.content,
+            color: r.color,
+        }));
+
         const regionsChanged =
-            JSON.stringify(regions) !== JSON.stringify(initialRegions);
+            JSON.stringify(currentRegionsData) !==
+            JSON.stringify(initialRegionsData);
 
         return audioChanged || regionsChanged;
     }, [usedUrl, regions, initialRegions, url]);
@@ -64,28 +82,32 @@ export default function WaveformEditor({
             .find((p) => p instanceof RegionsPlugin) as any;
     }, [wavesurfer]);
 
-    const regionActions = useMemo(() => {
-        if (!wavesurfer || !regionsPlugin) {
-            return null;
-        }
+    // Manage region setup and lifecycle
+    useEffect(() => {
+        if (!wavesurfer || !regionsPlugin) return;
 
-        return setupRegionManager(wavesurfer, regionsPlugin, {
+        // Initialize the manager
+        const manager = setupRegionManager(wavesurfer, regionsPlugin, {
             loopRegion: initialLoopRegion,
             autoPlay: initialAutoplay,
+            initialRegions: initialRegions,
             onRegionsChange: (newRegions: any[]) => {
+                // Update local state with actual instances
                 setRegions([...newRegions]);
                 onRegionsChange?.([...newRegions]);
             },
         });
-    }, [
-        wavesurfer,
-        regionsPlugin,
-        initialLoopRegion,
-        initialAutoplay,
-        onRegionsChange,
-    ]);
 
-    // Keep loopRegion in sync with the manager
+        setRegionActions(manager);
+
+        // Cleanup on unmount or re-init
+        return () => {
+            manager.destroy();
+            setRegionActions(null);
+        };
+    }, [wavesurfer, regionsPlugin]); // Only re-run if instances change
+
+    // Keep options in sync without re-initializing the manager
     useEffect(() => {
         regionActions?.setLoop(loopRegion);
     }, [loopRegion, regionActions]);

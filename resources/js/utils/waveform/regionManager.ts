@@ -6,14 +6,15 @@ type RegionManagerOptions = {
     loopRegion: boolean;
     onRegionsChange: (newRegions: Region[]) => void;
     autoPlay: boolean;
+    initialRegions?: any[];
 };
+
 export const setupRegionManager = (
     ws: WaveSurfer,
     regionsPlugin: RegionsPlugin,
     options: RegionManagerOptions,
 ) => {
     let activeRegion: any = null;
-
     let currentOptions = { ...options };
 
     const notify = () => {
@@ -22,68 +23,40 @@ export const setupRegionManager = (
         }
     };
 
-    regionsPlugin.enableDragSelection({
-        color: 'rgba(255, 0, 0, 0.1)', // Default color for new drags
-    });
-
-    // remove all existing regions
-    regionsPlugin.unAll();
-
-    // Handle Selection & Playback
-    regionsPlugin.on('region-clicked', (region: any, e: MouseEvent) => {
+    // --- EVENT HANDLERS ---
+    const handleRegionClicked = (region: any, e: MouseEvent) => {
         e.stopPropagation();
-
-        // Visual feedback: Highlight the active region
-        /*regionsPlugin.getRegions().forEach((r: any) => {
-            r.setOptions({ color: 'rgba(0, 0, 0, 0.1)' });
-        });
-        region.setOptions({ color: 'rgba(255, 165, 0, 0.4)' });
-*/
         activeRegion = region;
         region.play();
-    });
+    };
 
-    // Handle Deletion on Double Click
-    regionsPlugin.on('region-double-clicked', (region: any, e: MouseEvent) => {
+    const handleDoubleClicked = (region: any, e: MouseEvent) => {
         e.stopPropagation();
-
-        const confirmed = window.confirm('Delete this region');
-
-        if (!confirmed) {
-            return;
-        }
-
+        const confirmed = window.confirm('Delete this region?');
+        if (!confirmed) return;
         region.remove();
         activeRegion = null;
-        console.log('Region deleted via double-click');
         notify();
-    });
+    };
 
-    // When a user finishes dragging to create a new region
-    regionsPlugin.on('region-created', (region: any) => {
-        console.log('User created a region:', region.start, region.end);
-
-        // Apply a default look to the new user-drawn region
-        region.setOptions({
-            color: 'rgba(0, 255, 0, 0.2)', // Greenish for new segments
-            drag: true,
-            resize: true,
-        });
-
+    const handleRegionCreated = (region: any) => {
+        // Apply default styles only if it's a new user-created region
+        // (addRegion from code doesn't typically trigger this unless dragSelection is used)
+        if (!region.color) {
+            region.setOptions({
+                color: 'rgba(0, 255, 0, 0.2)',
+                drag: true,
+                resize: true,
+            });
+        }
         activeRegion = region;
-
         if (currentOptions.autoPlay) {
             region.play();
         }
-
         notify();
-    });
+    };
 
-    // Optional: If you want it to play immediately after they finish drawing
-    regionsPlugin.on('region-updated', (region: any) => {
-        console.log('update');
-
-        // This fires after the mouse is released
+    const handleRegionUpdated = (region: any) => {
         if (
             currentOptions.autoPlay &&
             activeRegion &&
@@ -91,57 +64,78 @@ export const setupRegionManager = (
         ) {
             region.play();
         }
-
         notify();
-    });
+    };
 
-    regionsPlugin.on('region-removed', () => {
-        notify();
-    });
-
-    // Smart Exit Logic (Stop at end of active region)
-    regionsPlugin.on('region-out', (region: any) => {
+    const handleRegionOut = (region: any) => {
         if (activeRegion && activeRegion.id === region.id) {
             if (currentOptions?.loopRegion) {
                 region.play();
-
                 return;
             }
-
             activeRegion = null;
         }
-    });
+    };
 
-    regionsPlugin.on('region-content-changed', (e) => {
-        console.log('content-changed', e);
-        notify();
-    });
-
-    // 5. Cleanup: If the user clicks the background, deselect
-    ws.on('interaction', (time: number) => {
-        console.log('interaction', time);
+    const handleInteraction = () => {
         activeRegion = null;
+    };
 
-        /*regionsPlugin.getRegions().forEach((r: any) => {
-            r.setOptions({ color: 'rgba(100, 149, 237, 0.3)' });
-        });*/
+    // --- INITIALIZATION ---
+    regionsPlugin.enableDragSelection({
+        color: 'rgba(255, 0, 0, 0.1)',
     });
 
+    // Clear existing regions to avoid duplicates on re-init
+    regionsPlugin.unAll();
+
+    // Add initial regions from JSON
+    if (options.initialRegions) {
+        options.initialRegions.forEach((regionData) => {
+            // Ensure data is valid for addRegion
+            regionsPlugin.addRegion({
+                ...regionData,
+                content: typeof regionData.content === 'string' ? regionData.content : '',
+            });
+        });
+        // Notify once after all initial regions are added
+        notify();
+    }
+
+    // Bind listeners
+    regionsPlugin.on('region-clicked', handleRegionClicked);
+    regionsPlugin.on('region-double-clicked', handleDoubleClicked);
+    regionsPlugin.on('region-created', handleRegionCreated);
+    regionsPlugin.on('region-updated', handleRegionUpdated);
+    regionsPlugin.on('region-removed', notify);
+    regionsPlugin.on('region-out', handleRegionOut);
+    regionsPlugin.on('region-content-changed', notify);
+    ws.on('interaction', handleInteraction);
+
+    // Return actions and cleanup
     return {
         instance: regionsPlugin,
         sync: notify,
         getRegions: () => regionsPlugin.getRegions(),
         setOptions: (newOptions: any) => {
             currentOptions = { ...currentOptions, ...newOptions };
-            console.log('Options updated:', currentOptions);
         },
-
         setLoop: (shouldLoop: boolean) => {
             currentOptions.loopRegion = shouldLoop;
         },
-
         setAutoplay: (shouldAutoplay: boolean) => {
             currentOptions.autoPlay = shouldAutoplay;
+        },
+        destroy: () => {
+            // Unbind all listeners
+            regionsPlugin.un('region-clicked', handleRegionClicked);
+            regionsPlugin.un('region-double-clicked', handleDoubleClicked);
+            regionsPlugin.un('region-created', handleRegionCreated);
+            regionsPlugin.un('region-updated', handleRegionUpdated);
+            regionsPlugin.un('region-removed', notify);
+            regionsPlugin.un('region-out', handleRegionOut);
+            regionsPlugin.un('region-content-changed', notify);
+            ws.un('interaction', handleInteraction);
         },
     };
 };

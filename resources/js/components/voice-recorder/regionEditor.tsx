@@ -1,10 +1,11 @@
 import { LockIcon, TrashIcon } from 'lucide-react';
 import type { ChangeEvent } from 'react';
+import type { Region } from 'wavesurfer.js/plugins/regions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 type RegionEditor = {
-    regions: any[];
+    regions: Region[];
     regionActions: any;
 };
 export default function RegionEditor({ regions, regionActions }: RegionEditor) {
@@ -42,6 +43,13 @@ export default function RegionEditor({ regions, regionActions }: RegionEditor) {
                         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
                     }
 
+                    if (typeof region.getContent !== 'function') {
+                        return <div>NOT A REGION</div>;
+                    }
+
+                    const value: string =
+                        region.getContent()?.toString()?.trimStart() || '';
+
                     return (
                         <div
                             key={region.id}
@@ -66,7 +74,7 @@ export default function RegionEditor({ regions, regionActions }: RegionEditor) {
                                 {(region.end - region.start).toFixed(2)}s
                             </span>
                             <Input
-                                value={''}
+                                value={value}
                                 onChange={(
                                     e: ChangeEvent<
                                         HTMLInputElement,
