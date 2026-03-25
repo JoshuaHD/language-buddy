@@ -1,4 +1,5 @@
 import WavesurferPlayer from '@wavesurfer/react';
+import { clsx } from 'clsx';
 import { PauseIcon, PlayIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
@@ -10,8 +11,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import AudioRateSlider from '@/components/voice-recorder/audioRateSlider';
 import RecordAudioButton from '@/components/voice-recorder/recordAudioButton';
 import RegionEditor from '@/components/voice-recorder/regionEditor';
-import { setupRegionManager, simplifyRegion } from '@/utils/waveform/regionManager';
-import { clsx } from 'clsx';
+import {
+    setupRegionManager,
+    simplifyRegion,
+} from '@/utils/waveform/regionManager';
 
 const formatTime = (seconds: number) =>
     [seconds / 60, seconds % 60]
@@ -33,9 +36,8 @@ export default function WaveformEditor({
     const initialAutoplay = true;
     const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
     const dummyAudioUrl = '/audio/100-milliseconds-of-silence.ogg';
-    const [usedUrl, setUsedUrl] = useState(
-        url ?? dummyAudioUrl,
-    );
+    const [usedUrl, setUsedUrl] = useState(url ?? dummyAudioUrl);
+
     const [isPlaying, setIsPlaying] = useState(false);
     const [loopRegion, setLoopRegion] = useState(initialLoopRegion);
     const [autoplay, setAutoplay] = useState(initialAutoplay);
@@ -46,11 +48,10 @@ export default function WaveformEditor({
     const regionsRef = useRef<any[]>([]);
     const lastUrlRef = useRef<string | undefined>(url);
 
-    const isDummyUrl = usedUrl === dummyAudioUrl
+    const isDummyUrl = usedUrl === dummyAudioUrl;
 
     const isDirty = useMemo(() => {
-        const audioChanged =
-            usedUrl !== (url ?? dummyAudioUrl);
+        const audioChanged = usedUrl !== (url ?? dummyAudioUrl);
 
         const currentData = JSON.stringify(regions.map(simplifyRegion));
         const initialData = JSON.stringify(initialRegions.map(simplifyRegion));
@@ -80,7 +81,11 @@ export default function WaveformEditor({
 
         // If the URL hasn't changed and we already have a manager, don't re-init.
         // But if it's a blob, always re-init to clear old state correctly.
-        if (usedUrl === lastUrlRef.current && regionActions && !usedUrl.startsWith('blob:')) {
+        if (
+            usedUrl === lastUrlRef.current &&
+            regionActions &&
+            !usedUrl.startsWith('blob:')
+        ) {
             return;
         }
 
@@ -155,6 +160,12 @@ export default function WaveformEditor({
         onRecordEnd(blob, regionsRef.current);
     }
 
+    function handleUndo() {
+        if(url){
+            setUsedUrl(url);
+        }
+    }
+
     return (
         <div className={'rounded-lg border bg-card p-4 shadow-sm'}>
             <div className="mb-2 flex items-center justify-between">
@@ -223,12 +234,15 @@ export default function WaveformEditor({
                         recordPlugin={recordPlugin}
                         onRecordEnd={handleRecordEnd}
                     />
-                    <Button
-                        onClick={handleSubmitRecording}
-                        disabled={!isDirty || isDummyUrl}
-                    >
-                        Save
-                    </Button>
+                    <div>
+                        {usedUrl != url && !isDummyUrl && <Button onClick={handleUndo}>undo</Button>}
+                        <Button
+                            onClick={handleSubmitRecording}
+                            disabled={!isDirty || isDummyUrl}
+                        >
+                            Save
+                        </Button>
+                    </div>
                 </div>
             </div>
 
