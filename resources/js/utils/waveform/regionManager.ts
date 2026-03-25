@@ -16,8 +16,10 @@ export const setupRegionManager = (
 ) => {
     let activeRegion: any = null;
     let currentOptions = { ...options };
+    let isInternalUpdate = false;
 
     const notify = () => {
+        if (isInternalUpdate) return;
         if (currentOptions?.onRegionsChange) {
             currentOptions.onRegionsChange(regionsPlugin.getRegions());
         }
@@ -40,17 +42,18 @@ export const setupRegionManager = (
     };
 
     const handleRegionCreated = (region: any) => {
-        // Apply default styles only if it's a new user-created region
-        // (addRegion from code doesn't typically trigger this unless dragSelection is used)
-        if (!region.color) {
+        // Only apply defaults if it's a truly new user-created region
+        // (addRegion from code will have properties defined)
+        if (region.drag === undefined && !isInternalUpdate) {
             region.setOptions({
                 color: 'rgba(0, 255, 0, 0.2)',
                 drag: true,
                 resize: true,
+                content: '',
             });
         }
         activeRegion = region;
-        if (currentOptions.autoPlay) {
+        if (currentOptions.autoPlay && !isInternalUpdate) {
             region.play();
         }
         notify();
@@ -90,15 +93,16 @@ export const setupRegionManager = (
     regionsPlugin.unAll();
 
     // Add initial regions from JSON
-    if (options.initialRegions) {
+    if (options.initialRegions && options.initialRegions.length > 0) {
+        isInternalUpdate = true;
         options.initialRegions.forEach((regionData) => {
-            // Ensure data is valid for addRegion
             regionsPlugin.addRegion({
                 ...regionData,
                 content: typeof regionData.content === 'string' ? regionData.content : '',
             });
         });
-        // Notify once after all initial regions are added
+        isInternalUpdate = false;
+        // Notify once after all initial regions are added to sync the component state
         notify();
     }
 

@@ -1,6 +1,6 @@
 import WavesurferPlayer from '@wavesurfer/react';
 import { PauseIcon, PlayIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import Timeline from 'wavesurfer.js/dist/plugins/timeline.esm.js';
@@ -21,14 +21,28 @@ interface WaveformEditorProps {
     url?: string;
     onRecordEnd: (blob: Blob, regions: any[]) => void;
     initialRegions?: any[];
-    onRegionsChange?: (regions: any[]) => void;
 }
+
+/**
+ * Simplify a region to its primitive properties for stable comparison.
+ */
+const simplifyRegion = (r: any) => ({
+    id: r.id,
+    start: Math.round(r.start * 100) / 100,
+    end: Math.round(r.end * 100) / 100,
+    content: (typeof r.content === 'string'
+        ? r.content
+        : r.content?.innerText || r.options?.content || ''
+    ).trim(),
+    color: r.color,
+    drag: r.drag !== false,
+    resize: r.resize !== false,
+});
 
 export default function WaveformEditor({
     url,
     onRecordEnd,
     initialRegions = [],
-    onRegionsChange,
 }: WaveformEditorProps) {
     const initialLoopRegion = true;
     const initialAutoplay = true;
@@ -43,30 +57,17 @@ export default function WaveformEditor({
     const [regions, setRegions] = useState<any[]>([]);
     const [regionActions, setRegionActions] = useState<any>(null);
 
+    const lastUrlRef = useRef<string | undefined>(url);
+    const isInitializingRef = useRef(false);
+
     const isDirty = useMemo(() => {
         const audioChanged =
             usedUrl !== (url ?? '/audio/100-milliseconds-of-silence.ogg');
 
-        // Extract relevant properties for comparison
-        const currentRegionsData = regions.map((r) => ({
-            start: r.start,
-            end: r.end,
-            content: typeof r.content === 'string' ? r.content : '',
-            color: r.color,
-        }));
+        const currentData = JSON.stringify(regions.map(simplifyRegion));
+        const initialData = JSON.stringify(initialRegions.map(simplifyRegion));
 
-        const initialRegionsData = initialRegions.map((r) => ({
-            start: r.start,
-            end: r.end,
-            content: r.content,
-            color: r.color,
-        }));
-
-        const regionsChanged =
-            JSON.stringify(currentRegionsData) !==
-            JSON.stringify(initialRegionsData);
-
-        return audioChanged || regionsChanged;
+        return audioChanged || currentData !== initialData;
     }, [usedUrl, regions, initialRegions, url]);
 
     // Get the record plugin instance from wavesurfer if it's available
@@ -77,37 +78,45 @@ export default function WaveformEditor({
     }, [wavesurfer]);
 
     const regionsPlugin = useMemo(() => {
-        return wavesurfer
-            ?.getActivePlugins()
-            .find((p) => p instanceof RegionsPlugin) as any;
+        return (
+            (wavesurfer
+                ?.getActivePlugins()
+                .find((p) => p instanceof RegionsPlugin) as any) || null
+        );
     }, [wavesurfer]);
 
-    // Manage region setup and lifecycle
+    // Setup region manager when wavesurfer, regionsPlugin, or URL changes
     useEffect(() => {
         if (!wavesurfer || !regionsPlugin) return;
 
-        // Initialize the manager
-        const manager = setupRegionManager(wavesurfer, regionsPlugin, {
+        // If the URL hasn't changed, and we already have a manager, 
+        // don't re-initialize. This is critical for new recording blobs.
+        if (usedUrl === lastUrlRef.current && regionActions) {
+            return;
+        }
+        
+        lastUrlRef.current = usedUrl;
+        isInitializingRef.current = true;
+
+        const actions = setupRegionManager(wavesurfer, regionsPlugin, {
             loopRegion: initialLoopRegion,
             autoPlay: initialAutoplay,
             initialRegions: initialRegions,
             onRegionsChange: (newRegions: any[]) => {
-                // Update local state with actual instances
                 setRegions([...newRegions]);
-                onRegionsChange?.([...newRegions]);
             },
         });
 
-        setRegionActions(manager);
+        setRegionActions(actions);
+        isInitializingRef.current = false;
 
-        // Cleanup on unmount or re-init
         return () => {
-            manager.destroy();
+            actions.destroy();
             setRegionActions(null);
         };
-    }, [wavesurfer, regionsPlugin]); // Only re-run if instances change
+    }, [wavesurfer, regionsPlugin, usedUrl]); // Only re-run if URL changes (including new blobs)
 
-    // Keep options in sync without re-initializing the manager
+    // Keep loop options in sync
     useEffect(() => {
         regionActions?.setLoop(loopRegion);
     }, [loopRegion, regionActions]);
@@ -116,7 +125,7 @@ export default function WaveformEditor({
         regionActions?.setAutoplay(autoplay);
     }, [autoplay, regionActions]);
 
-    // 3. Create plugins inside useMemo, but DON'T assign to the ref here
+    // Create plugins
     const plugins = useMemo(
         () => [
             Timeline.create({ container: '#timeline' }),
@@ -149,9 +158,7 @@ export default function WaveformEditor({
 
     async function handleSubmitRecording() {
         const response = await fetch(usedUrl);
-
         const blob = await response.blob();
-
         onRecordEnd(blob, regions);
     }
 
@@ -181,7 +188,7 @@ export default function WaveformEditor({
                     <Button
                         variant={'outline'}
                         onClick={() => wavesurfer?.playPause()}
-                        disabled={!url && !recordPlugin}
+                        disabled={!usedUrl && !recordPlugin}
                     >
                         {isPlaying ? <PauseIcon /> : <PlayIcon />}
                     </Button>

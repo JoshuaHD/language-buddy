@@ -53,6 +53,22 @@ import { dashboard } from '@/routes';
 import { record } from '@/routes/app';
 import type { Language, Recording, Sentence } from '@/types/models';
 
+/**
+ * Simplify a region to its primitive properties for database storage.
+ */
+const simplifyRegion = (r: any) => ({
+    id: r.id,
+    start: Math.round(r.start * 100) / 100,
+    end: Math.round(r.end * 100) / 100,
+    content: (typeof r.content === 'string'
+        ? r.content
+        : r.content?.innerText || r.options?.content || ''
+    ).trim(),
+    color: r.color,
+    drag: r.drag !== false,
+    resize: r.resize !== false,
+});
+
 export default function VoiceRecorderPage({
     languages,
     sentences,
@@ -67,7 +83,6 @@ export default function VoiceRecorderPage({
         useState<Recording | null>(null);
     const [isRecordingNew, setIsRecordingNew] = useState(false);
     const [isAddSentenceOpen, setIsAddSentenceOpen] = useState(false);
-    const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
     // Sync selected sentence/recording when props update (e.g. after save)
     useEffect(() => {
@@ -116,6 +131,10 @@ export default function VoiceRecorderPage({
         });
     };
 
+    /**
+     * Explicit save handler triggered by WaveformEditor button.
+     * Handles both creation of new recordings and overwriting existing ones.
+     */
     const handleRecordEnd = (blob: Blob, regions: any[]) => {
         if (!selectedSentence) {
             return;
@@ -124,18 +143,12 @@ export default function VoiceRecorderPage({
         const formData = new FormData();
         formData.append('audio', blob, 'recording.webm');
 
-        // Simplify regions for database storage
-        const simplifiedRegions = regions.map((r) => ({
-            start: r.start,
-            end: r.end,
-            content: typeof r.content === 'string' ? r.content : '',
-            color: r.color,
-        }));
-
-        formData.append('options[regions]', JSON.stringify(simplifiedRegions));
+        const simplifiedRegions = regions.map(simplifyRegion);
 
         if (selectedRecording) {
             formData.append('_method', 'PATCH');
+            formData.append('options[regions]', JSON.stringify(simplifiedRegions));
+            
             router.post(updateRecording(selectedRecording.id).url, formData, {
                 forceFormData: true,
                 onSuccess: () => {
@@ -143,6 +156,8 @@ export default function VoiceRecorderPage({
                 },
             });
         } else {
+            formData.append('options[regions]', JSON.stringify(simplifiedRegions));
+
             router.post(storeRecording(selectedSentence.id).url, formData, {
                 forceFormData: true,
                 onSuccess: () => {
@@ -179,32 +194,6 @@ export default function VoiceRecorderPage({
             });
         }
     };
-
-    const handleRegionsChange = useCallback(
-        (regions: any[]) => {
-            if (!selectedRecording) {
-                return;
-            }
-
-            if (debounceRef.current) {
-                clearTimeout(debounceRef.current);
-            }
-
-            debounceRef.current = setTimeout(() => {
-                router.patch(
-                    updateRecording(selectedRecording.id),
-                    {
-                        options: { regions },
-                    },
-                    {
-                        preserveScroll: true,
-                        preserveState: true,
-                    },
-                );
-            }, 1000);
-        },
-        [selectedRecording],
-    );
 
     return (
         <AppLayout
@@ -506,9 +495,6 @@ export default function VoiceRecorderPage({
                                                     ?.regions || []
                                             }
                                             onRecordEnd={handleRecordEnd}
-                                            onRegionsChange={
-                                                handleRegionsChange
-                                            }
                                         />
                                         <div className="mt-4 flex justify-end">
                                             <Button

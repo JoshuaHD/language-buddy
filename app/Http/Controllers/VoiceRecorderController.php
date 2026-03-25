@@ -86,11 +86,13 @@ class VoiceRecorderController extends Controller
         }
 
         if ($request->has('options')) {
-            $options = $request->input('options');
-            if (isset($options['regions']) && is_string($options['regions'])) {
-                $options['regions'] = json_decode($options['regions'], true);
+            $newOptions = $request->input('options');
+
+            if (isset($newOptions['regions']) && is_string($newOptions['regions'])) {
+                $newOptions['regions'] = json_decode($newOptions['regions'], true);
             }
-            $recording->options = $options;
+
+            $recording->options = array_merge($recording->options ?? [], $newOptions);
         }
 
         $recording->save();
