@@ -15,8 +15,8 @@ export default function RegionEditor({
 }: RegionEditorProps) {
     return (
         <>
-            {regions
-                .toSorted((a, b) => a.start - b.start)
+            {[...regions]
+                .sort((a, b) => a.start - b.start)
                 .map((region) => {
                     function rgbaStringToHex(rgba: string) {
                         const match = rgba.match(
@@ -45,13 +45,12 @@ export default function RegionEditor({
                         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
                     }
 
-                    // Handle content extraction from Region instance
+                    // Handle content extraction from Region instance or options
                     const contentValue: string = (
-                        typeof region.content === 'string'
+                        (region as any).options?.content ||
+                        (typeof region.content === 'string'
                             ? region.content
-                            : (region.content as HTMLElement)?.innerText ||
-                              (region as any).options?.content ||
-                              ''
+                            : (region.content as HTMLElement)?.innerText || '')
                     ).trim();
 
                     return (
@@ -70,13 +69,14 @@ export default function RegionEditor({
                                     regionActions?.sync();
                                 }}
                             />
-                            <span>
+                            <span className="whitespace-nowrap">
                                 {region.start.toFixed(2)}s +
                                 {(region.end - region.start).toFixed(2)}s
                             </span>
                             <Input
                                 value={contentValue}
                                 placeholder="Region label..."
+                                className="h-7 py-1"
                                 onChange={(
                                     e: ChangeEvent<HTMLInputElement>,
                                 ) => {
@@ -90,6 +90,7 @@ export default function RegionEditor({
                             <Button
                                 variant={'outline'}
                                 size="sm"
+                                className="h-7 w-7 p-0"
                                 onClick={() => {
                                     region.setOptions({
                                         drag: !region.drag,
@@ -99,19 +100,20 @@ export default function RegionEditor({
                                 }}
                             >
                                 <LockIcon
-                                    size={14}
+                                    size={12}
                                     color={region.drag ? 'gray' : 'red'}
                                 />
                             </Button>
                             <Button
                                 variant="ghost"
                                 size="sm"
+                                className="h-7 w-7 p-0"
                                 disabled={!region.drag}
                                 onClick={() => {
                                     region.remove();
                                 }}
                             >
-                                <TrashIcon size={14} />
+                                <TrashIcon size={12} />
                             </Button>
                         </div>
                     );

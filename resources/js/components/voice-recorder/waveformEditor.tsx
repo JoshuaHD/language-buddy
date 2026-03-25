@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import AudioRateSlider from '@/components/voice-recorder/audioRateSlider';
 import RecordAudioButton from '@/components/voice-recorder/recordAudioButton';
 import RegionEditor from '@/components/voice-recorder/regionEditor';
-import { setupRegionManager } from '@/utils/waveform/regionManager';
+import { setupRegionManager, simplifyRegion } from '@/utils/waveform/regionManager';
 
 const formatTime = (seconds: number) =>
     [seconds / 60, seconds % 60]
@@ -22,22 +22,6 @@ interface WaveformEditorProps {
     onRecordEnd: (blob: Blob, regions: any[]) => void;
     initialRegions?: any[];
 }
-
-/**
- * Simplify a region to its primitive properties for stable comparison.
- */
-const simplifyRegion = (r: any) => ({
-    id: r.id,
-    start: Math.round(r.start * 100) / 100,
-    end: Math.round(r.end * 100) / 100,
-    content: (typeof r.content === 'string'
-        ? r.content
-        : r.content?.innerText || r.options?.content || ''
-    ).trim(),
-    color: r.color,
-    drag: r.drag !== false,
-    resize: r.resize !== false,
-});
 
 export default function WaveformEditor({
     url,
@@ -57,8 +41,8 @@ export default function WaveformEditor({
     const [regions, setRegions] = useState<any[]>([]);
     const [regionActions, setRegionActions] = useState<any>(null);
 
+    const regionsRef = useRef<any[]>([]);
     const lastUrlRef = useRef<string | undefined>(url);
-    const isInitializingRef = useRef(false);
 
     const isDirty = useMemo(() => {
         const audioChanged =
@@ -70,7 +54,6 @@ export default function WaveformEditor({
         return audioChanged || currentData !== initialData;
     }, [usedUrl, regions, initialRegions, url]);
 
-    // Get the record plugin instance from wavesurfer if it's available
     const recordPlugin = useMemo(() => {
         return wavesurfer
             ?.getActivePlugins()
@@ -85,32 +68,34 @@ export default function WaveformEditor({
         );
     }, [wavesurfer]);
 
-    // Setup region manager when wavesurfer, regionsPlugin, or URL changes
+    // Setup region manager
     useEffect(() => {
         if (!wavesurfer || !regionsPlugin) return;
 
-        // If the URL hasn't changed, and we already have a manager, don't re-init.
-        if (usedUrl === lastUrlRef.current && regionActions) {
+        // If the URL hasn't changed and we already have a manager, don't re-init.
+        // But if it's a blob, always re-init to clear old state correctly.
+        if (usedUrl === lastUrlRef.current && regionActions && !usedUrl.startsWith('blob:')) {
             return;
         }
-        
-        lastUrlRef.current = usedUrl;
-        isInitializingRef.current = true;
 
-        // When re-recording (usedUrl is a blob), we should NOT load initialRegions from props
-        const effectiveInitialRegions = usedUrl.startsWith('blob:') ? [] : initialRegions;
+        lastUrlRef.current = usedUrl;
+
+        // Clear regions from previous recording if this is a fresh blob take
+        const effectiveInitialRegions = usedUrl.startsWith('blob:')
+            ? []
+            : initialRegions;
 
         const actions = setupRegionManager(wavesurfer, regionsPlugin, {
             loopRegion: initialLoopRegion,
             autoPlay: initialAutoplay,
             initialRegions: effectiveInitialRegions,
             onRegionsChange: (newRegions: any[]) => {
+                regionsRef.current = [...newRegions];
                 setRegions([...newRegions]);
             },
         });
 
         setRegionActions(actions);
-        isInitializingRef.current = false;
 
         return () => {
             actions.destroy();
@@ -118,7 +103,6 @@ export default function WaveformEditor({
         };
     }, [wavesurfer, regionsPlugin, usedUrl]);
 
-    // Keep loop options in sync without re-initializing the manager
     useEffect(() => {
         regionActions?.setLoop(loopRegion);
     }, [loopRegion, regionActions]);
@@ -127,7 +111,6 @@ export default function WaveformEditor({
         regionActions?.setAutoplay(autoplay);
     }, [autoplay, regionActions]);
 
-    // 3. Create plugins inside useMemo, but DON'T assign to the ref here
     const plugins = useMemo(
         () => [
             Timeline.create({ container: '#timeline' }),
@@ -156,13 +139,14 @@ export default function WaveformEditor({
     function handleRecordEnd(blob: Blob) {
         const blobUrl = URL.createObjectURL(blob);
         setUsedUrl(blobUrl);
-        setRegions([]); // Clear current regions for the new recording
+        setRegions([]); 
+        regionsRef.current = [];
     }
 
     async function handleSubmitRecording() {
         const response = await fetch(usedUrl);
         const blob = await response.blob();
-        onRecordEnd(blob, regions);
+        onRecordEnd(blob, regionsRef.current);
     }
 
     return (

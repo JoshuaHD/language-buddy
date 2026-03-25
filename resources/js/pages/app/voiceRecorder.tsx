@@ -51,23 +51,8 @@ import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { record } from '@/routes/app';
+import { simplifyRegion } from '@/utils/waveform/regionManager';
 import type { Language, Recording, Sentence } from '@/types/models';
-
-/**
- * Simplify a region to its primitive properties for database storage.
- */
-const simplifyRegion = (r: any) => ({
-    id: r.id,
-    start: Math.round(r.start * 100) / 100,
-    end: Math.round(r.end * 100) / 100,
-    content: (typeof r.content === 'string'
-        ? r.content
-        : r.content?.innerText || r.options?.content || ''
-    ).trim(),
-    color: r.color,
-    drag: r.drag !== false,
-    resize: r.resize !== false,
-});
 
 export default function VoiceRecorderPage({
     languages,
@@ -131,10 +116,6 @@ export default function VoiceRecorderPage({
         });
     };
 
-    /**
-     * Explicit save handler triggered by WaveformEditor button.
-     * Handles both creation of new recordings and overwriting existing ones.
-     */
     const handleRecordEnd = (blob: Blob, regions: any[]) => {
         if (!selectedSentence) {
             return;

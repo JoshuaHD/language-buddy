@@ -9,6 +9,34 @@ type RegionManagerOptions = {
     initialRegions?: any[];
 };
 
+/**
+ * Robustly simplify a region instance or JSON object to primitive properties.
+ */
+export const simplifyRegion = (r: any) => {
+    let content = '';
+    try {
+        if (r.options && r.options.content) {
+            content = r.options.content;
+        } else if (typeof r.content === 'string') {
+            content = r.content;
+        } else if (r.content && r.content.innerText) {
+            content = r.content.innerText;
+        }
+    } catch (e) {
+        console.error('Error extracting region content', e);
+    }
+
+    return {
+        id: r.id || `temp-${Date.now()}`,
+        start: Number(r.start) || 0,
+        end: Number(r.end) || 0,
+        content: String(content || '').trim(),
+        color: r.color || r.options?.color || 'rgba(0,0,0,0.1)',
+        drag: r.drag !== false && r.options?.drag !== false,
+        resize: r.resize !== false && r.options?.resize !== false,
+    };
+};
+
 export const setupRegionManager = (
     ws: WaveSurfer,
     regionsPlugin: RegionsPlugin,
@@ -42,9 +70,7 @@ export const setupRegionManager = (
     };
 
     const handleRegionCreated = (region: any) => {
-        // Only apply defaults if it's a truly new user-created region
-        // (addRegion from code will have properties defined)
-        if (region.drag === undefined && !isInternalUpdate) {
+        if (!isInternalUpdate && region.drag === undefined) {
             region.setOptions({
                 color: 'rgba(0, 255, 0, 0.2)',
                 drag: true,
@@ -53,25 +79,21 @@ export const setupRegionManager = (
             });
         }
         activeRegion = region;
-        if (currentOptions.autoPlay && !isInternalUpdate) {
+        if (currentOptions.autoPlay && !isInternalUpdate && !region.isInitial) {
             region.play();
         }
         notify();
     };
 
     const handleRegionUpdated = (region: any) => {
-        if (
-            currentOptions.autoPlay &&
-            activeRegion &&
-            activeRegion.id === region.id
-        ) {
+        if (currentOptions.autoPlay && activeRegion?.id === region.id) {
             region.play();
         }
         notify();
     };
 
     const handleRegionOut = (region: any) => {
-        if (activeRegion && activeRegion.id === region.id) {
+        if (activeRegion?.id === region.id) {
             if (currentOptions?.loopRegion) {
                 region.play();
                 return;
@@ -89,34 +111,43 @@ export const setupRegionManager = (
         color: 'rgba(255, 0, 0, 0.1)',
     });
 
-    // Clear existing regions to avoid duplicates on re-init
     regionsPlugin.unAll();
 
-    // Add initial regions from JSON
     if (options.initialRegions && options.initialRegions.length > 0) {
         isInternalUpdate = true;
         options.initialRegions.forEach((regionData) => {
             regionsPlugin.addRegion({
                 ...regionData,
+                isInitial: true,
                 content: typeof regionData.content === 'string' ? regionData.content : '',
             });
         });
         isInternalUpdate = false;
-        // Notify once after all initial regions are added to sync the component state
         notify();
     }
 
-    // Bind listeners
+    // Clean listeners
+    regionsPlugin.un('region-clicked', handleRegionClicked);
     regionsPlugin.on('region-clicked', handleRegionClicked);
+    
+    regionsPlugin.un('region-double-clicked', handleDoubleClicked);
     regionsPlugin.on('region-double-clicked', handleDoubleClicked);
+    
+    regionsPlugin.un('region-created', handleRegionCreated);
     regionsPlugin.on('region-created', handleRegionCreated);
+    
+    regionsPlugin.un('region-updated', handleRegionUpdated);
     regionsPlugin.on('region-updated', handleRegionUpdated);
+    
+    regionsPlugin.un('region-removed', notify);
     regionsPlugin.on('region-removed', notify);
+    
+    regionsPlugin.un('region-out', handleRegionOut);
     regionsPlugin.on('region-out', handleRegionOut);
-    regionsPlugin.on('region-content-changed', notify);
+    
+    ws.un('interaction', handleInteraction);
     ws.on('interaction', handleInteraction);
 
-    // Return actions and cleanup
     return {
         instance: regionsPlugin,
         sync: notify,
@@ -131,14 +162,12 @@ export const setupRegionManager = (
             currentOptions.autoPlay = shouldAutoplay;
         },
         destroy: () => {
-            // Unbind all listeners
             regionsPlugin.un('region-clicked', handleRegionClicked);
             regionsPlugin.un('region-double-clicked', handleDoubleClicked);
             regionsPlugin.un('region-created', handleRegionCreated);
             regionsPlugin.un('region-updated', handleRegionUpdated);
             regionsPlugin.un('region-removed', notify);
             regionsPlugin.un('region-out', handleRegionOut);
-            regionsPlugin.un('region-content-changed', notify);
             ws.un('interaction', handleInteraction);
         },
     };
