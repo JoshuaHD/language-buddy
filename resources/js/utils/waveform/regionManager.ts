@@ -14,6 +14,7 @@ type RegionManagerOptions = {
  */
 export const simplifyRegion = (r: any) => {
     let content = '';
+
     try {
         if (r.options && r.options.content) {
             content = r.options.content;
@@ -47,7 +48,10 @@ export const setupRegionManager = (
     let isInternalUpdate = false;
 
     const notify = () => {
-        if (isInternalUpdate) return;
+        if (isInternalUpdate) {
+            return;
+        }
+
         if (currentOptions?.onRegionsChange) {
             currentOptions.onRegionsChange(regionsPlugin.getRegions());
         }
@@ -63,7 +67,11 @@ export const setupRegionManager = (
     const handleDoubleClicked = (region: any, e: MouseEvent) => {
         e.stopPropagation();
         const confirmed = window.confirm('Delete this region?');
-        if (!confirmed) return;
+
+        if (!confirmed) {
+            return;
+        }
+
         region.remove();
         activeRegion = null;
         notify();
@@ -78,10 +86,13 @@ export const setupRegionManager = (
                 content: '',
             });
         }
+
         activeRegion = region;
+
         if (currentOptions.autoPlay && !isInternalUpdate && !region.isInitial) {
             region.play();
         }
+
         notify();
     };
 
@@ -89,6 +100,7 @@ export const setupRegionManager = (
         if (currentOptions.autoPlay && activeRegion?.id === region.id) {
             region.play();
         }
+
         notify();
     };
 
@@ -96,8 +108,10 @@ export const setupRegionManager = (
         if (activeRegion?.id === region.id) {
             if (currentOptions?.loopRegion) {
                 region.play();
+
                 return;
             }
+
             activeRegion = null;
         }
     };
@@ -129,22 +143,22 @@ export const setupRegionManager = (
     // Clean listeners
     regionsPlugin.un('region-clicked', handleRegionClicked);
     regionsPlugin.on('region-clicked', handleRegionClicked);
-    
+
     regionsPlugin.un('region-double-clicked', handleDoubleClicked);
     regionsPlugin.on('region-double-clicked', handleDoubleClicked);
-    
+
     regionsPlugin.un('region-created', handleRegionCreated);
     regionsPlugin.on('region-created', handleRegionCreated);
-    
+
     regionsPlugin.un('region-updated', handleRegionUpdated);
     regionsPlugin.on('region-updated', handleRegionUpdated);
-    
+
     regionsPlugin.un('region-removed', notify);
     regionsPlugin.on('region-removed', notify);
-    
+
     regionsPlugin.un('region-out', handleRegionOut);
     regionsPlugin.on('region-out', handleRegionOut);
-    
+
     ws.un('interaction', handleInteraction);
     ws.on('interaction', handleInteraction);
 
