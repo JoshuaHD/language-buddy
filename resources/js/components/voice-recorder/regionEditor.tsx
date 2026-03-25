@@ -4,11 +4,15 @@ import type { Region } from 'wavesurfer.js/plugins/regions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-type RegionEditor = {
+type RegionEditorProps = {
     regions: Region[];
     regionActions: any;
 };
-export default function RegionEditor({ regions, regionActions }: RegionEditor) {
+
+export default function RegionEditor({
+    regions,
+    regionActions,
+}: RegionEditorProps) {
     return (
         <>
             {regions
@@ -19,9 +23,7 @@ export default function RegionEditor({ regions, regionActions }: RegionEditor) {
                             /rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?\s*\)/i,
                         );
 
-                        if (!match) {
-                            return;
-                        }
+                        if (!match) return '#000000';
 
                         const r = parseInt(match[1], 10);
                         const g = parseInt(match[2], 10);
@@ -43,12 +45,14 @@ export default function RegionEditor({ regions, regionActions }: RegionEditor) {
                         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
                     }
 
-                    if (typeof region.getContent !== 'function') {
-                        return <div>NOT A REGION</div>;
-                    }
-
-                    const value: string =
-                        region.getContent()?.toString()?.trimStart() || '';
+                    // Handle content extraction from Region instance
+                    const contentValue: string = (
+                        typeof region.content === 'string'
+                            ? region.content
+                            : (region.content as HTMLElement)?.innerText ||
+                              (region as any).options?.content ||
+                              ''
+                    ).trim();
 
                     return (
                         <div
@@ -57,15 +61,12 @@ export default function RegionEditor({ regions, regionActions }: RegionEditor) {
                         >
                             <input
                                 className={'opacity-20'}
-                                value={rgbaStringToHex(region.color) ?? ''}
+                                value={rgbaStringToHex(region.color)}
                                 type={'color'}
                                 onChange={(e) => {
-                                    console.log('color change', e.target.value);
-
                                     region.setOptions({
                                         color: hexToRgba(e.target.value, 0.2),
                                     });
-
                                     regionActions?.sync();
                                 }}
                             />
@@ -74,16 +75,12 @@ export default function RegionEditor({ regions, regionActions }: RegionEditor) {
                                 {(region.end - region.start).toFixed(2)}s
                             </span>
                             <Input
-                                value={value}
+                                value={contentValue}
+                                placeholder="Region label..."
                                 onChange={(
-                                    e: ChangeEvent<
-                                        HTMLInputElement,
-                                        HTMLInputElement
-                                    >,
+                                    e: ChangeEvent<HTMLInputElement>,
                                 ) => {
                                     const value = e.target.value;
-
-                                    //region.setContent(value || undefined)
                                     region.setOptions({
                                         content: value || ' ',
                                     });
@@ -92,6 +89,7 @@ export default function RegionEditor({ regions, regionActions }: RegionEditor) {
                             />
                             <Button
                                 variant={'outline'}
+                                size="sm"
                                 onClick={() => {
                                     region.setOptions({
                                         drag: !region.drag,
@@ -101,16 +99,19 @@ export default function RegionEditor({ regions, regionActions }: RegionEditor) {
                                 }}
                             >
                                 <LockIcon
+                                    size={14}
                                     color={region.drag ? 'gray' : 'red'}
                                 />
                             </Button>
                             <Button
+                                variant="ghost"
+                                size="sm"
                                 disabled={!region.drag}
                                 onClick={() => {
                                     region.remove();
                                 }}
                             >
-                                <TrashIcon />
+                                <TrashIcon size={14} />
                             </Button>
                         </div>
                     );

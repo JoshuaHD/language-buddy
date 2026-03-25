@@ -89,8 +89,7 @@ export default function WaveformEditor({
     useEffect(() => {
         if (!wavesurfer || !regionsPlugin) return;
 
-        // If the URL hasn't changed, and we already have a manager, 
-        // don't re-initialize. This is critical for new recording blobs.
+        // If the URL hasn't changed, and we already have a manager, don't re-init.
         if (usedUrl === lastUrlRef.current && regionActions) {
             return;
         }
@@ -98,10 +97,13 @@ export default function WaveformEditor({
         lastUrlRef.current = usedUrl;
         isInitializingRef.current = true;
 
+        // When re-recording (usedUrl is a blob), we should NOT load initialRegions from props
+        const effectiveInitialRegions = usedUrl.startsWith('blob:') ? [] : initialRegions;
+
         const actions = setupRegionManager(wavesurfer, regionsPlugin, {
             loopRegion: initialLoopRegion,
             autoPlay: initialAutoplay,
-            initialRegions: initialRegions,
+            initialRegions: effectiveInitialRegions,
             onRegionsChange: (newRegions: any[]) => {
                 setRegions([...newRegions]);
             },
@@ -114,9 +116,9 @@ export default function WaveformEditor({
             actions.destroy();
             setRegionActions(null);
         };
-    }, [wavesurfer, regionsPlugin, usedUrl]); // Only re-run if URL changes (including new blobs)
+    }, [wavesurfer, regionsPlugin, usedUrl]);
 
-    // Keep loop options in sync
+    // Keep loop options in sync without re-initializing the manager
     useEffect(() => {
         regionActions?.setLoop(loopRegion);
     }, [loopRegion, regionActions]);
@@ -125,7 +127,7 @@ export default function WaveformEditor({
         regionActions?.setAutoplay(autoplay);
     }, [autoplay, regionActions]);
 
-    // Create plugins
+    // 3. Create plugins inside useMemo, but DON'T assign to the ref here
     const plugins = useMemo(
         () => [
             Timeline.create({ container: '#timeline' }),
@@ -154,6 +156,7 @@ export default function WaveformEditor({
     function handleRecordEnd(blob: Blob) {
         const blobUrl = URL.createObjectURL(blob);
         setUsedUrl(blobUrl);
+        setRegions([]); // Clear current regions for the new recording
     }
 
     async function handleSubmitRecording() {
