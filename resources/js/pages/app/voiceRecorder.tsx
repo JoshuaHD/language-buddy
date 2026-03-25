@@ -6,7 +6,7 @@ import {
     PlusIcon,
     Trash2,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     destroyRecording,
     destroySentence,
@@ -51,8 +51,8 @@ import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { record } from '@/routes/app';
-import { simplifyRegion } from '@/utils/waveform/regionManager';
 import type { Language, Recording, Sentence } from '@/types/models';
+import { simplifyRegion } from '@/utils/waveform/regionManager';
 
 export default function VoiceRecorderPage({
     languages,
@@ -129,7 +129,7 @@ export default function VoiceRecorderPage({
         if (selectedRecording) {
             formData.append('_method', 'PATCH');
             formData.append('options[regions]', JSON.stringify(simplifiedRegions));
-            
+
             router.post(updateRecording(selectedRecording.id).url, formData, {
                 forceFormData: true,
                 onSuccess: () => {

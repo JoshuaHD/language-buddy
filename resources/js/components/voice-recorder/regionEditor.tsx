@@ -23,7 +23,9 @@ export default function RegionEditor({
                             /rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?\s*\)/i,
                         );
 
-                        if (!match) return '#000000';
+                        if (!match) {
+                            return '#000000';
+                        }
 
                         const r = parseInt(match[1], 10);
                         const g = parseInt(match[2], 10);
