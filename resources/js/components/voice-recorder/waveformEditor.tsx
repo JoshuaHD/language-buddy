@@ -11,6 +11,7 @@ import AudioRateSlider from '@/components/voice-recorder/audioRateSlider';
 import RecordAudioButton from '@/components/voice-recorder/recordAudioButton';
 import RegionEditor from '@/components/voice-recorder/regionEditor';
 import { setupRegionManager, simplifyRegion } from '@/utils/waveform/regionManager';
+import { clsx } from 'clsx';
 
 const formatTime = (seconds: number) =>
     [seconds / 60, seconds % 60]
@@ -31,8 +32,9 @@ export default function WaveformEditor({
     const initialLoopRegion = true;
     const initialAutoplay = true;
     const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
+    const dummyAudioUrl = '/audio/100-milliseconds-of-silence.ogg';
     const [usedUrl, setUsedUrl] = useState(
-        url ?? '/audio/100-milliseconds-of-silence.ogg',
+        url ?? dummyAudioUrl,
     );
     const [isPlaying, setIsPlaying] = useState(false);
     const [loopRegion, setLoopRegion] = useState(initialLoopRegion);
@@ -44,9 +46,11 @@ export default function WaveformEditor({
     const regionsRef = useRef<any[]>([]);
     const lastUrlRef = useRef<string | undefined>(url);
 
+    const isDummyUrl = usedUrl === dummyAudioUrl
+
     const isDirty = useMemo(() => {
         const audioChanged =
-            usedUrl !== (url ?? '/audio/100-milliseconds-of-silence.ogg');
+            usedUrl !== (url ?? dummyAudioUrl);
 
         const currentData = JSON.stringify(regions.map(simplifyRegion));
         const initialData = JSON.stringify(initialRegions.map(simplifyRegion));
@@ -70,7 +74,9 @@ export default function WaveformEditor({
 
     // Setup region manager
     useEffect(() => {
-        if (!wavesurfer || !regionsPlugin) return;
+        if (!wavesurfer || !regionsPlugin || isDummyUrl) {
+            return;
+        }
 
         // If the URL hasn't changed and we already have a manager, don't re-init.
         // But if it's a blob, always re-init to clear old state correctly.
@@ -139,7 +145,7 @@ export default function WaveformEditor({
     function handleRecordEnd(blob: Blob) {
         const blobUrl = URL.createObjectURL(blob);
         setUsedUrl(blobUrl);
-        setRegions([]); 
+        setRegions([]);
         regionsRef.current = [];
     }
 
@@ -168,10 +174,16 @@ export default function WaveformEditor({
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 plugins={plugins}
+                interact={!isDummyUrl}
             />
 
             <div style={{ marginTop: '10px' }}>
-                <div className={'my-1 flex items-center justify-between'}>
+                <div
+                    className={clsx(
+                        'my-1 flex items-center justify-between',
+                        isDummyUrl ? 'pointer-events-none opacity-50' : '',
+                    )}
+                >
                     <Button
                         variant={'outline'}
                         onClick={() => wavesurfer?.playPause()}
@@ -211,7 +223,10 @@ export default function WaveformEditor({
                         recordPlugin={recordPlugin}
                         onRecordEnd={handleRecordEnd}
                     />
-                    <Button onClick={handleSubmitRecording} disabled={!isDirty}>
+                    <Button
+                        onClick={handleSubmitRecording}
+                        disabled={!isDirty || isDummyUrl}
+                    >
                         Save
                     </Button>
                 </div>
