@@ -12,7 +12,28 @@ class Language extends Model
     /** @use HasFactory<LanguageFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'code'];
+    protected $fillable = [
+        'code',
+        'iso3',
+        'name_common',
+        'name_native',
+        'alt_names',
+        'search_tokens',
+        'search_normalized',
+        'scripts',
+        'regions',
+        'rtl',
+        'living',
+    ];
+
+    protected $casts = [
+        'alt_names' => 'array',
+        'search_tokens' => 'array',
+        'scripts' => 'array',
+        'regions' => 'array',
+        'rtl' => 'boolean',
+        'living' => 'boolean',
+    ];
 
     public function sentences(): HasMany
     {

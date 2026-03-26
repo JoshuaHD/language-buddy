@@ -13,8 +13,17 @@ return new class extends Migration
     {
         Schema::create('languages', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('code')->unique();
+            $table->string('code', 10)->index();
+            $table->string('iso3', 10)->unique();
+            $table->string('name_common');
+            $table->string('name_native')->nullable();
+            $table->json('alt_names')->nullable();
+            $table->json('search_tokens')->nullable();
+            $table->text('search_normalized')->nullable();
+            $table->json('scripts')->nullable();
+            $table->json('regions')->nullable();
+            $table->boolean('rtl')->default(false);
+            $table->boolean('living')->default(true);
             $table->timestamps();
         });
     }

@@ -20,8 +20,12 @@ class LanguageFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->languageCode(),
-            'code' => $this->faker->languageCode(),
+            'code' => $this->faker->unique()->languageCode(),
+            'iso3' => $this->faker->unique()->lexify('???'),
+            'name_common' => $this->faker->languageCode(),
+            'name_native' => $this->faker->languageCode(),
+            'rtl' => false,
+            'living' => true,
         ];
     }
 }

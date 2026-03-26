@@ -35,6 +35,7 @@ export const simplifyRegion = (r: any) => {
         color: r.color || r.options?.color || 'rgba(0,0,0,0.1)',
         drag: r.drag !== false && r.options?.drag !== false,
         resize: r.resize !== false && r.options?.resize !== false,
+        isNew: !!r.isNew,
     };
 };
 
@@ -85,6 +86,7 @@ export const setupRegionManager = (
                 resize: true,
                 content: '',
             });
+            region.isNew = true; // Mark as new for focus
         }
 
         activeRegion = region;

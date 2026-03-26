@@ -12,7 +12,7 @@ beforeEach(function () {
     $this->withoutMiddleware(PreventRequestForgery::class);
     Storage::fake('public');
     $this->user = User::factory()->create();
-    $this->language = Language::factory()->create(['name' => 'English']);
+    $this->language = Language::factory()->create(['name_common' => 'English']);
 });
 
 test('can view the voice recorder page with data', function () {
@@ -151,19 +151,4 @@ test('old recording file is deleted from disk when a new one is uploaded', funct
         ->assertRedirect();
 
     Storage::disk('public')->assertMissing('recordings/old-file.webm');
-});
-
-test('cannot save the 100-milliseconds-of-silence file to the api', function () {
-    // this tests needs to happen client side
-    // if wavesurfer is initialized deactivate save button
-    // - also deactivate regions plugin
-
-    expect(false)->toBeTrue();
-});
-
-test('can update only regions of a recording', function () {
-    // when a new recording for an existing recording is started the old regions should disappear
-    // so that the user can create new regions for that region
-
-    expect(false)->toBeTrue();
 });

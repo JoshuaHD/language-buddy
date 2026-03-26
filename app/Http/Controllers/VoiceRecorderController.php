@@ -15,7 +15,7 @@ class VoiceRecorderController extends Controller
     public function index(): Response
     {
         return Inertia::render('app/voiceRecorder', [
-            'languages' => Language::all(),
+            'languages' => Language::orderBy('name_common')->get(),
             'sentences' => Sentence::with(['recordings'])->latest()->get(),
         ]);
     }

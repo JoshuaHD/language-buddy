@@ -234,7 +234,7 @@ export default function VoiceRecorderPage({
                                                         key={lang.id}
                                                         value={lang.id.toString()}
                                                     >
-                                                        {lang.name}
+                                                        {lang.name_common}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -302,7 +302,7 @@ export default function VoiceRecorderPage({
                                                     (l) =>
                                                         l.id ===
                                                         sentence.language_id,
-                                                )?.name
+                                                )?.name_common
                                             }
                                         </span>
                                         <span>
