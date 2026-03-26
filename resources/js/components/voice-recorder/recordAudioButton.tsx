@@ -4,11 +4,13 @@ import { setupRecordManager } from '@/utils/waveform/recordManager';
 
 type RecordAudioButtonProps = {
     recordPlugin: any;
+    onRecordStart?: () => void;
     onRecordEnd: (blob: Blob) => void;
 };
 
 export default function RecordAudioButton({
     recordPlugin,
+    onRecordStart,
     onRecordEnd,
 }: RecordAudioButtonProps) {
     const [isRecording, setIsRecording] = useState(false);
@@ -31,6 +33,7 @@ export default function RecordAudioButton({
         const handleStart = () => {
             setIsRecording(true);
             setIsBusy(false);
+            onRecordStart?.();
         };
 
         const handleEnd = (blob: Blob) => {
@@ -46,7 +49,7 @@ export default function RecordAudioButton({
             recordPlugin.un('record-start', handleStart);
             recordPlugin.un('record-end', handleEnd);
         };
-    }, [recordPlugin, onRecordEnd]);
+    }, [recordPlugin, onRecordStart, onRecordEnd]);
 
     const handleToggleRecord = async () => {
         if (isBusy || !recordActions) {

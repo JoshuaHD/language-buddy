@@ -44,6 +44,7 @@ export default function WaveformEditor({
     const [audioRate, setAudioRate] = useState(1);
     const [regions, setRegions] = useState<any[]>([]);
     const [regionActions, setRegionActions] = useState<any>(null);
+    const regionActionsRef = useRef<any>(null);
 
     const regionsRef = useRef<any[]>([]);
     const lastUrlRef = useRef<string | undefined>(url);
@@ -73,6 +74,10 @@ export default function WaveformEditor({
         );
     }, [wavesurfer]);
 
+    const initialRegionsRef = useRef(initialRegions);
+    const initialLoopRegionRef = useRef(initialLoopRegion);
+    const initialAutoplayRef = useRef(initialAutoplay);
+
     // Setup region manager
     useEffect(() => {
         if (!wavesurfer || !regionsPlugin || isDummyUrl) {
@@ -83,7 +88,7 @@ export default function WaveformEditor({
         // But if it's a blob, always re-init to clear old state correctly.
         if (
             usedUrl === lastUrlRef.current &&
-            regionActions &&
+            regionActionsRef.current &&
             !usedUrl.startsWith('blob:')
         ) {
             return;
@@ -94,11 +99,11 @@ export default function WaveformEditor({
         // Clear regions from previous recording if this is a fresh blob take
         const effectiveInitialRegions = usedUrl.startsWith('blob:')
             ? []
-            : initialRegions;
+            : initialRegionsRef.current;
 
         const actions = setupRegionManager(wavesurfer, regionsPlugin, {
-            loopRegion: initialLoopRegion,
-            autoPlay: initialAutoplay,
+            loopRegion: initialLoopRegionRef.current,
+            autoPlay: initialAutoplayRef.current,
             initialRegions: effectiveInitialRegions,
             onRegionsChange: (newRegions: any[]) => {
                 regionsRef.current = [...newRegions];
@@ -106,13 +111,16 @@ export default function WaveformEditor({
             },
         });
 
+        regionActionsRef.current = actions;
         setRegionActions(actions);
+        setRegions(actions.getRegions());
 
         return () => {
             actions.destroy();
+            regionActionsRef.current = null;
             setRegionActions(null);
         };
-    }, [wavesurfer, regionsPlugin, usedUrl]);
+    }, [wavesurfer, regionsPlugin, usedUrl, isDummyUrl]);
 
     useEffect(() => {
         regionActions?.setLoop(loopRegion);
@@ -145,6 +153,12 @@ export default function WaveformEditor({
 
     function handleAutoplay() {
         setAutoplay(!autoplay);
+    }
+
+    function handleRecordStart() {
+        setRegions([]);
+        regionsRef.current = [];
+        regionActions?.clearRegions();
     }
 
     function handleRecordEnd(blob: Blob) {
@@ -232,6 +246,7 @@ export default function WaveformEditor({
                 <div className={'flex items-center justify-between gap-1'}>
                     <RecordAudioButton
                         recordPlugin={recordPlugin}
+                        onRecordStart={handleRecordStart}
                         onRecordEnd={handleRecordEnd}
                     />
                     <div>

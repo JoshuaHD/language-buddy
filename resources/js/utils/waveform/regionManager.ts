@@ -127,7 +127,7 @@ export const setupRegionManager = (
         color: 'rgba(255, 0, 0, 0.1)',
     });
 
-    regionsPlugin.unAll();
+    regionsPlugin.clearRegions();
 
     if (options.initialRegions && options.initialRegions.length > 0) {
         isInternalUpdate = true;
@@ -177,6 +177,10 @@ export const setupRegionManager = (
         setAutoplay: (shouldAutoplay: boolean) => {
             currentOptions.autoPlay = shouldAutoplay;
         },
+        clearRegions: () => {
+            regionsPlugin.clearRegions();
+            notify();
+        },
         destroy: () => {
             regionsPlugin.un('region-clicked', handleRegionClicked);
             regionsPlugin.un('region-double-clicked', handleDoubleClicked);
@@ -185,6 +189,7 @@ export const setupRegionManager = (
             regionsPlugin.un('region-removed', notify);
             regionsPlugin.un('region-out', handleRegionOut);
             ws.un('interaction', handleInteraction);
+            regionsPlugin.clearRegions();
         },
     };
 };
