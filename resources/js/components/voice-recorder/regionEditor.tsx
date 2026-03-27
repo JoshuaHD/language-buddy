@@ -1,14 +1,19 @@
-import { LockIcon, TrashIcon } from 'lucide-react';
+import { LockIcon, Repeat, TrashIcon, Zap } from 'lucide-react';
 import {  useEffect, useRef } from 'react';
 import type {ChangeEvent} from 'react';
 import type { Region } from 'wavesurfer.js/plugins/regions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Toggle } from '@/components/ui/toggle';
+import { cn } from '@/lib/utils';
 
 type RegionEditorProps = {
     regions: Region[];
     regionActions: any;
     autoplay: boolean;
+    setAutoplay?: (val: boolean) => void;
+    loopRegion: boolean;
+    setLoopRegion?: (val: boolean) => void;
     focusedRegionId?: string | null;
     setFocusedRegionId?: (id: string | null) => void;
 };
@@ -17,26 +22,58 @@ export default function RegionEditor({
     regions,
     regionActions,
     autoplay,
+    setAutoplay,
+    loopRegion,
+    setLoopRegion,
     focusedRegionId,
     setFocusedRegionId,
 }: RegionEditorProps) {
     return (
-        <>
-            {[...regions]
-                .sort((a, b) => a.start - b.start)
-                .map((region) => {
-                    return (
-                        <RegionItem
-                            key={region.id}
-                            region={region}
-                            regionActions={regionActions}
-                            autoplay={autoplay}
-                            isFocused={focusedRegionId === region.id}
-                            onFocused={() => setFocusedRegionId?.(null)}
-                        />
-                    );
-                })}
-        </>
+        <div className="space-y-3">
+            <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold">Regions</h3>
+                <div className="flex items-center rounded-md border p-0.5 shadow-xs">
+                    <Toggle
+                        pressed={autoplay}
+                        onPressedChange={setAutoplay}
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        aria-label="Toggle autoplay"
+                        title="Autoplay"
+                    >
+                        <Zap className={cn('h-3.5 w-3.5', autoplay ? 'fill-current' : '')} />
+                    </Toggle>
+                    <div className="mx-1 h-3 w-[1px] bg-border" />
+                    <Toggle
+                        pressed={loopRegion}
+                        onPressedChange={setLoopRegion}
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        aria-label="Toggle loop region"
+                        title="Loop Region"
+                    >
+                        <Repeat className="h-3.5 w-3.5" />
+                    </Toggle>
+                </div>
+            </div>
+
+            <div className="space-y-1">
+                {[...regions]
+                    .sort((a, b) => a.start - b.start)
+                    .map((region) => {
+                        return (
+                            <RegionItem
+                                key={region.id}
+                                region={region}
+                                regionActions={regionActions}
+                                autoplay={autoplay}
+                                isFocused={focusedRegionId === region.id}
+                                onFocused={() => setFocusedRegionId?.(null)}
+                            />
+                        );
+                    })}
+            </div>
+        </div>
     );
 }
 

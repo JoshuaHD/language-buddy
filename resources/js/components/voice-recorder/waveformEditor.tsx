@@ -1,13 +1,15 @@
 import WavesurferPlayer from '@wavesurfer/react';
 import { clsx } from 'clsx';
-import { PauseIcon, PlayIcon } from 'lucide-react';
+import {
+    PauseIcon,
+    PlayIcon,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import Timeline from 'wavesurfer.js/dist/plugins/timeline.esm.js';
 import RecordPlugin from 'wavesurfer.js/plugins/record';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import AudioRateSlider from '@/components/voice-recorder/audioRateSlider';
 import RecordAudioButton from '@/components/voice-recorder/recordAudioButton';
 import RegionEditor from '@/components/voice-recorder/regionEditor';
@@ -228,20 +230,6 @@ export default function WaveformEditor({
                         {isPlaying ? <PauseIcon /> : <PlayIcon />}
                     </Button>
 
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            checked={loopRegion}
-                            onCheckedChange={() => handleRegionLoop()}
-                        />
-                        <span className="text-sm">Loop Region</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            checked={autoplay}
-                            onCheckedChange={() => handleAutoplay()}
-                        />
-                        <span className="text-sm">Autoplay</span>
-                    </div>
                     <div>
                         <span className="mr-2 text-sm">
                             Speed: ({audioRate})
@@ -272,12 +260,14 @@ export default function WaveformEditor({
                 </div>
             </div>
 
-            <div className="mt-4 space-y-1">
-                <h3 className="text-sm font-bold">Regions:</h3>
+            <div className="mt-4">
                 <RegionEditor
                     regions={regions}
                     regionActions={regionActions}
                     autoplay={autoplay}
+                    setAutoplay={setAutoplay}
+                    loopRegion={loopRegion}
+                    setLoopRegion={setLoopRegion}
                     focusedRegionId={focusedRegionId}
                     setFocusedRegionId={setFocusedRegionId}
                 />
