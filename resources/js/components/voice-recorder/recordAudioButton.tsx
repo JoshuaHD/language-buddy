@@ -1,3 +1,4 @@
+import { MicIcon, Square } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { setupRecordManager } from '@/utils/waveform/recordManager';
@@ -72,19 +73,20 @@ export default function RecordAudioButton({
 
     return (
         <Button
+            variant={isRecording ? 'destructive' : 'secondary'}
             onClick={handleToggleRecord}
             disabled={isBusy || !recordPlugin}
-            style={{
-                backgroundColor: isRecording ? 'red' : 'black',
-                color: 'white',
-                opacity: isBusy || !recordPlugin ? 0.5 : 1,
-            }}
+            size="sm"
+            title={isRecording ? 'Stop Recording' : 'Start Recording'}
+            className="h-9 w-9 p-0"
         >
-            {isBusy
-                ? 'Wait...'
-                : isRecording
-                  ? 'Stop Recording'
-                  : 'Start Recording'}
+            {isBusy ? (
+                <span className="h-2 w-2 animate-pulse rounded-full bg-current" />
+            ) : isRecording ? (
+                <Square className="h-4 w-4 fill-current" />
+            ) : (
+                <MicIcon className="h-4 w-4" />
+            )}
         </Button>
     );
 }

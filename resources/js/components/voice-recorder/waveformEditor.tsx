@@ -1,8 +1,10 @@
 import WavesurferPlayer from '@wavesurfer/react';
 import { clsx } from 'clsx';
 import {
+    Check,
     PauseIcon,
     PlayIcon,
+    RotateCcw,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
@@ -215,46 +217,77 @@ export default function WaveformEditor({
                 />
             </div>
 
-            <div style={{ marginTop: '10px' }}>
+            <div className="mt-4">
                 <div
                     className={clsx(
-                        'my-1 flex items-center justify-between',
+                        'flex items-center justify-between gap-4 rounded-lg border bg-muted/30 p-2',
                         isDummyUrl ? 'pointer-events-none opacity-50' : '',
                     )}
                 >
-                    <Button
-                        variant={'outline'}
-                        onClick={() => wavesurfer?.playPause()}
-                        disabled={!usedUrl && !recordPlugin}
-                    >
-                        {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                    </Button>
+                    {/* Playback & Record Group */}
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant={'outline'}
+                            size="sm"
+                            className="h-9 w-9 p-0"
+                            onClick={() => wavesurfer?.playPause()}
+                            disabled={!usedUrl && !recordPlugin}
+                            title={isPlaying ? 'Pause' : 'Play'}
+                        >
+                            {isPlaying ? (
+                                <PauseIcon className="h-4 w-4" />
+                            ) : (
+                                <PlayIcon className="h-4 w-4" />
+                            )}
+                        </Button>
 
-                    <div>
-                        <span className="mr-2 text-sm">
-                            Speed: ({audioRate})
-                        </span>
-                        <AudioRateSlider
-                            wavesurfer={wavesurfer}
-                            onChange={(newRate: number) =>
-                                setAudioRate(newRate)
-                            }
+                        <RecordAudioButton
+                            recordPlugin={recordPlugin}
+                            onRecordStart={handleRecordStart}
+                            onRecordEnd={handleRecordEnd}
                         />
                     </div>
-                </div>
-                <div className={'flex items-center justify-between gap-1'}>
-                    <RecordAudioButton
-                        recordPlugin={recordPlugin}
-                        onRecordStart={handleRecordStart}
-                        onRecordEnd={handleRecordEnd}
-                    />
-                    <div>
-                        {usedUrl != url && !isDummyUrl && <Button onClick={handleUndo}>undo</Button>}
+
+                    {/* Speed Group - Flexible middle */}
+                    <div className="flex flex-1 items-center justify-center gap-2 px-4 max-w-[200px]">
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                            Speed
+                        </span>
+                        <div className="flex-1">
+                            <AudioRateSlider
+                                wavesurfer={wavesurfer}
+                                onChange={(newRate: number) =>
+                                    setAudioRate(newRate)
+                                }
+                            />
+                        </div>
+                        <span className="min-w-[2.5rem] text-center text-xs font-mono">
+                            {audioRate.toFixed(1)}x
+                        </span>
+                    </div>
+
+                    {/* Persistence Group */}
+                    <div className="flex items-center gap-1">
+                        {usedUrl !== url && !isDummyUrl && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 w-9 p-0"
+                                onClick={handleUndo}
+                                title="Undo changes"
+                            >
+                                <RotateCcw className="h-4 w-4" />
+                            </Button>
+                        )}
                         <Button
+                            variant={isDirty ? 'default' : 'ghost'}
+                            size="sm"
+                            className={clsx('h-9 px-3 gap-2', !isDirty && 'text-muted-foreground')}
                             onClick={handleSubmitRecording}
                             disabled={!isDirty || isDummyUrl}
                         >
-                            Save
+                            <Check className="h-4 w-4" />
+                            <span className="text-xs font-medium text-nowrap">Save</span>
                         </Button>
                     </div>
                 </div>
