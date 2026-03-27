@@ -118,6 +118,13 @@ export const setupRegionManager = (
 
     const handleRegionOut = (region: any) => {
         if (activeRegion?.id === region.id) {
+            const currentTime = ws.getCurrentTime();
+            // If we are not near the end, this might be a false positive event
+            // often fired at the start of playback in some browsers/versions.
+            if (currentTime < region.end - 0.05) {
+                return;
+            }
+
             if (currentOptions?.loopRegion) {
                 region.play();
 
@@ -125,6 +132,7 @@ export const setupRegionManager = (
             }
 
             activeRegion = null;
+            ws.pause();
         }
     };
 
