@@ -139,10 +139,14 @@ export const setupRegionManager = (
     const handleRegionOut = (region: any) => {
         if (activeRegion?.id === region.id) {
             const currentTime = ws.getCurrentTime();
-            // If we are not near the end, this might be a false positive event
-            // often fired at the start of playback in some browsers/versions.
+            const duration = ws.getDuration();
 
-            if (currentTime < region.end - 0.05) {
+            // If we are near the end of the region OR near the end of the total audio
+            // we should trigger the loop/pause logic.
+            const isNearRegionEnd = currentTime >= region.end - 0.05;
+            const isNearClipEnd = currentTime >= duration - 0.05;
+
+            if (!isNearRegionEnd && !isNearClipEnd) {
                 return;
             }
 
@@ -159,6 +163,12 @@ export const setupRegionManager = (
 
     const handleInteraction = () => {
         activeRegion = null;
+    };
+
+    const handleFinish = () => {
+        if (activeRegion && currentOptions?.loopRegion) {
+            activeRegion.play();
+        }
     };
 
     // --- INITIALIZATION ---
@@ -202,6 +212,9 @@ export const setupRegionManager = (
 
     ws.un('interaction', handleInteraction);
     ws.on('interaction', handleInteraction);
+
+    ws.un('finish', handleFinish);
+    ws.on('finish', handleFinish);
 
     return {
         instance: regionsPlugin,
@@ -249,6 +262,7 @@ export const setupRegionManager = (
             regionsPlugin.un('region-removed', notify);
             regionsPlugin.un('region-out', handleRegionOut);
             ws.un('interaction', handleInteraction);
+            ws.un('finish', handleFinish);
             regionsPlugin.clearRegions();
         },
     };
