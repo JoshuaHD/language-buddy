@@ -243,12 +243,7 @@ return;
             </div>
 
             <div className="mt-4">
-                <div
-                    className={clsx(
-                        'flex items-center justify-between gap-4 rounded-lg border bg-muted/30 p-2',
-                        isDummyUrl ? 'pointer-events-none opacity-50' : '',
-                    )}
-                >
+                <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 p-2">
                     {/* Playback & Record Group */}
                     <div className="flex items-center gap-1">
                         <Button
@@ -256,7 +251,7 @@ return;
                             size="sm"
                             className="h-9 w-9 p-0"
                             onClick={() => wavesurfer?.playPause()}
-                            disabled={!usedUrl && !recordPlugin}
+                            disabled={!usedUrl || isDummyUrl}
                             title={isPlaying ? 'Pause' : 'Play'}
                         >
                             {isPlaying ? (
@@ -287,7 +282,12 @@ return;
                     </div>
 
                     {/* Speed Group - Flexible middle */}
-                    <div className="flex flex-1 items-center justify-center gap-2 px-4 max-w-[200px]">
+                    <div
+                        className={clsx(
+                            'flex flex-1 items-center justify-center gap-2 px-4 max-w-[200px]',
+                            isDummyUrl ? 'pointer-events-none opacity-50' : '',
+                        )}
+                    >
                         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                             Speed
                         </span>
