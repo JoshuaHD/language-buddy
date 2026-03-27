@@ -5,6 +5,7 @@ import {
     PauseIcon,
     PlayIcon,
     RotateCcw,
+    Scissors,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type WaveSurfer from 'wavesurfer.js';
@@ -15,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import AudioRateSlider from '@/components/voice-recorder/audioRateSlider';
 import RecordAudioButton from '@/components/voice-recorder/recordAudioButton';
 import RegionEditor from '@/components/voice-recorder/regionEditor';
+import { cropAudioBlob } from '@/utils/audio/audioCropper';
 import {
     setupRegionManager,
     simplifyRegion,
@@ -48,9 +50,9 @@ export default function WaveformEditor({
     const [audioRate, setAudioRate] = useState(1);
     const [regions, setRegions] = useState<any[]>([]);
     const [regionActions, setRegionActions] = useState<any>(null);
-                                                                                                                                                                                                                  const [focusedRegionId, setFocusedRegionId] = useState<string | null>(null);
+    const [focusedRegionId, setFocusedRegionId] = useState<string | null>(null);
+    const [isCropMode, setIsCropMode] = useState(false);
     const regionActionsRef = useRef<any>(null);
-
     const regionsRef = useRef<any[]>([]);
     const lastUrlRef = useRef<string | undefined>(url);
 
@@ -136,6 +138,10 @@ export default function WaveformEditor({
         regionActions?.setAutoplay(autoplay);
     }, [autoplay, regionActions]);
 
+    useEffect(() => {
+        regionActions?.setCropMode(isCropMode);
+    }, [isCropMode, regionActions]);
+
     const plugins = useMemo(
         () => [
             Timeline.create({ container: '#timeline' }),
@@ -153,14 +159,6 @@ export default function WaveformEditor({
         setWavesurfer(ws);
         setIsPlaying(false);
     };
-
-    function handleRegionLoop() {
-        setLoopRegion(!loopRegion);
-    }
-
-    function handleAutoplay() {
-        setAutoplay(!autoplay);
-    }
 
     function handleRecordStart() {
         setRegions([]);
@@ -189,6 +187,33 @@ export default function WaveformEditor({
             wavesurfer?.pause();
             setIsPlaying(false);
             setUsedUrl(url);
+            setIsCropMode(false);
+        }
+    }
+
+    async function handleCrop() {
+        if (regions.length === 0) {
+return;
+}
+
+        const cropRegion = regions[0];
+        const response = await fetch(usedUrl);
+        const blob = await response.blob();
+
+        try {
+            const croppedBlob = await cropAudioBlob(
+                blob,
+                cropRegion.start,
+                cropRegion.end,
+            );
+            const croppedUrl = URL.createObjectURL(croppedBlob);
+
+            setUsedUrl(croppedUrl);
+            setRegions([]);
+            regionsRef.current = [];
+            setIsCropMode(false);
+        } catch (err) {
+            console.error('Failed to crop audio:', err);
         }
     }
 
@@ -246,6 +271,19 @@ export default function WaveformEditor({
                             onRecordStart={handleRecordStart}
                             onRecordEnd={handleRecordEnd}
                         />
+
+                        <div className="mx-1 h-4 w-[1px] bg-border" />
+
+                        <Button
+                            variant={isCropMode ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-9 w-9 p-0"
+                            onClick={() => setIsCropMode(!isCropMode)}
+                            title="Crop Mode"
+                            disabled={isDummyUrl}
+                        >
+                            <Scissors className="h-4 w-4" />
+                        </Button>
                     </div>
 
                     {/* Speed Group - Flexible middle */}
@@ -268,7 +306,19 @@ export default function WaveformEditor({
 
                     {/* Persistence Group */}
                     <div className="flex items-center gap-1">
-                        {usedUrl !== url && !isDummyUrl && (
+                        {isCropMode && regions.length > 0 && (
+                            <Button
+                                variant="default"
+                                size="sm"
+                                className="h-9 px-3 gap-2 bg-red-600 hover:bg-red-700 text-white"
+                                onClick={handleCrop}
+                            >
+                                <Scissors className="h-4 w-4" />
+                                <span className="text-xs font-medium text-nowrap">Confirm Crop</span>
+                            </Button>
+                        )}
+
+                        {usedUrl !== url && !isDummyUrl && !isCropMode && (
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -279,16 +329,18 @@ export default function WaveformEditor({
                                 <RotateCcw className="h-4 w-4" />
                             </Button>
                         )}
-                        <Button
-                            variant={isDirty ? 'default' : 'ghost'}
-                            size="sm"
-                            className={clsx('h-9 px-3 gap-2', !isDirty && 'text-muted-foreground')}
-                            onClick={handleSubmitRecording}
-                            disabled={!isDirty || isDummyUrl}
-                        >
-                            <Check className="h-4 w-4" />
-                            <span className="text-xs font-medium text-nowrap">Save</span>
-                        </Button>
+                        {!isCropMode && (
+                            <Button
+                                variant={isDirty ? 'default' : 'ghost'}
+                                size="sm"
+                                className={clsx('h-9 px-3 gap-2', !isDirty && 'text-muted-foreground')}
+                                onClick={handleSubmitRecording}
+                                disabled={!isDirty || isDummyUrl}
+                            >
+                                <Check className="h-4 w-4" />
+                                <span className="text-xs font-medium text-nowrap">Save</span>
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -303,6 +355,7 @@ export default function WaveformEditor({
                     setLoopRegion={setLoopRegion}
                     focusedRegionId={focusedRegionId}
                     setFocusedRegionId={setFocusedRegionId}
+                    isCropMode={isCropMode}
                 />
             </div>
         </div>

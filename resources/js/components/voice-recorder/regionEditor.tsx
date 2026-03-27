@@ -1,4 +1,4 @@
-import { LockIcon, Repeat, TrashIcon, Zap } from 'lucide-react';
+import { LockIcon, Repeat, Scissors, TrashIcon, Zap } from 'lucide-react';
 import {  useEffect, useRef } from 'react';
 import type {ChangeEvent} from 'react';
 import type { Region } from 'wavesurfer.js/plugins/regions';
@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Toggle } from '@/components/ui/toggle';
 import { cn } from '@/lib/utils';
-
 type RegionEditorProps = {
     regions: Region[];
     regionActions: any;
@@ -16,6 +15,7 @@ type RegionEditorProps = {
     setLoopRegion?: (val: boolean) => void;
     focusedRegionId?: string | null;
     setFocusedRegionId?: (id: string | null) => void;
+    isCropMode?: boolean;
 };
 
 export default function RegionEditor({
@@ -27,9 +27,25 @@ export default function RegionEditor({
     setLoopRegion,
     focusedRegionId,
     setFocusedRegionId,
+    isCropMode = false,
 }: RegionEditorProps) {
+    if (isCropMode) {
+        return (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-center">
+                <div className="flex flex-col items-center gap-2">
+                    <Scissors className="h-5 w-5 text-red-600" />
+                    <div>
+                        <p className="text-sm font-bold text-red-900">Crop Mode Active</p>
+                        <p className="text-xs text-red-700">Draw a region on the waveform to select the area you want to keep. Everything outside this area will be deleted.</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-3">
+...
             <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold">Regions</h3>
                 <div className="flex items-center rounded-md border p-0.5 shadow-xs">

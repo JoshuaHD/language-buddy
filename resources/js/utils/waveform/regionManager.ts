@@ -8,6 +8,7 @@ type RegionManagerOptions = {
     onFocus?: (regionId: string) => void;
     autoPlay: boolean;
     initialRegions?: any[];
+    cropMode?: boolean;
 };
 
 /**
@@ -80,6 +81,28 @@ export const setupRegionManager = (
     };
 
     const handleRegionCreated = (region: any) => {
+        if (currentOptions.cropMode) {
+            // In crop mode, we only allow one region.
+            // Remove others.
+            regionsPlugin.getRegions().forEach((r) => {
+                if (r.id !== region.id) {
+                    r.remove();
+                }
+            });
+
+            region.setOptions({
+                color: 'rgba(255, 0, 0, 0.3)',
+                drag: true,
+                resize: true,
+                content: 'CROP AREA',
+            });
+
+            activeRegion = region;
+            notify();
+
+            return;
+        }
+
         if (!isInternalUpdate && region.drag === undefined) {
             region.setOptions({
                 color: 'rgba(0, 255, 0, 0.2)',
@@ -192,6 +215,15 @@ export const setupRegionManager = (
         },
         setAutoplay: (shouldAutoplay: boolean) => {
             currentOptions.autoPlay = shouldAutoplay;
+        },
+        setCropMode: (isCropMode: boolean) => {
+            currentOptions.cropMode = isCropMode;
+
+            if (isCropMode) {
+                // Clear existing regions when entering crop mode to start fresh
+                regionsPlugin.clearRegions();
+                notify();
+            }
         },
         playRegion: (regionId: string) => {
             const region = regionsPlugin.getRegions().find((r) => r.id === regionId);
