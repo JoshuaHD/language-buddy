@@ -281,40 +281,19 @@ return;
                         </Button>
                     </div>
 
-                    {/* Speed Group - Flexible middle */}
-                    <div
-                        className={clsx(
-                            'flex flex-1 items-center justify-center gap-2 px-4 max-w-[200px]',
-                            isDummyUrl ? 'pointer-events-none opacity-50' : '',
-                        )}
-                    >
-                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                            Speed
-                        </span>
-                        <div className="flex-1">
-                            <AudioRateSlider
-                                wavesurfer={wavesurfer}
-                                onChange={(newRate: number) =>
-                                    setAudioRate(newRate)
-                                }
-                            />
-                        </div>
-                        <span className="min-w-[2.5rem] text-center text-xs font-mono">
-                            {audioRate.toFixed(1)}x
-                        </span>
-                    </div>
-
                     {/* Persistence Group */}
                     <div className="flex items-center gap-1">
                         {isCropMode && regions.length > 0 && (
                             <Button
                                 variant="default"
                                 size="sm"
-                                className="h-9 px-3 gap-2 bg-red-600 hover:bg-red-700 text-white"
+                                className="h-9 gap-2 bg-red-600 px-3 text-white hover:bg-red-700"
                                 onClick={handleCrop}
                             >
                                 <Scissors className="h-4 w-4" />
-                                <span className="text-xs font-medium text-nowrap">Confirm Crop</span>
+                                <span className="text-xs font-medium text-nowrap">
+                                    Confirm Crop
+                                </span>
                             </Button>
                         )}
 
@@ -333,12 +312,17 @@ return;
                             <Button
                                 variant={isDirty ? 'default' : 'ghost'}
                                 size="sm"
-                                className={clsx('h-9 px-3 gap-2', !isDirty && 'text-muted-foreground')}
+                                className={clsx(
+                                    'h-9 gap-2 px-3',
+                                    !isDirty && 'text-muted-foreground',
+                                )}
                                 onClick={handleSubmitRecording}
                                 disabled={!isDirty || isDummyUrl}
                             >
                                 <Check className="h-4 w-4" />
-                                <span className="text-xs font-medium text-nowrap">Save</span>
+                                <span className="text-xs font-medium text-nowrap">
+                                    Save
+                                </span>
                             </Button>
                         )}
                     </div>
