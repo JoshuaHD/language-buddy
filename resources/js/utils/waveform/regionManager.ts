@@ -63,8 +63,9 @@ export const setupRegionManager = (
     const handleRegionClicked = (region: any, e: MouseEvent) => {
         e.stopPropagation();
         activeRegion = region;
-        region.play();
-
+        if (currentOptions.autoPlay) {
+            region.play();
+        }
         if (!isInternalUpdate) {
             currentOptions.onFocus?.(region.id);
         }

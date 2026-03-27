@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 type RegionEditorProps = {
     regions: Region[];
     regionActions: any;
+    autoplay: boolean;
     focusedRegionId?: string | null;
     setFocusedRegionId?: (id: string | null) => void;
 };
@@ -15,6 +16,7 @@ type RegionEditorProps = {
 export default function RegionEditor({
     regions,
     regionActions,
+    autoplay,
     focusedRegionId,
     setFocusedRegionId,
 }: RegionEditorProps) {
@@ -28,6 +30,7 @@ export default function RegionEditor({
                             key={region.id}
                             region={region}
                             regionActions={regionActions}
+                            autoplay={autoplay}
                             isFocused={focusedRegionId === region.id}
                             onFocused={() => setFocusedRegionId?.(null)}
                         />
@@ -40,11 +43,13 @@ export default function RegionEditor({
 function RegionItem({
     region,
     regionActions,
+    autoplay,
     isFocused,
     onFocused,
 }: {
     region: Region;
     regionActions: any;
+    autoplay: boolean;
     isFocused: boolean;
     onFocused: () => void;
 }) {
@@ -117,7 +122,9 @@ function RegionItem({
                 placeholder="Region label..."
                 className="h-7 py-1"
                 onFocus={() => {
-                    regionActions?.playRegion(region.id);
+                    if (autoplay) {
+                        regionActions?.playRegion(region.id);
+                    }
                 }}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     const value = e.target.value;

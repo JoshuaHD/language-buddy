@@ -277,6 +277,7 @@ export default function WaveformEditor({
                 <RegionEditor
                     regions={regions}
                     regionActions={regionActions}
+                    autoplay={autoplay}
                     focusedRegionId={focusedRegionId}
                     setFocusedRegionId={setFocusedRegionId}
                 />
