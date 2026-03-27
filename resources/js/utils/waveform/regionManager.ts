@@ -64,6 +64,7 @@ export const setupRegionManager = (
         e.stopPropagation();
         activeRegion = region;
         region.play();
+
         if (!isInternalUpdate) {
             currentOptions.onFocus?.(region.id);
         }
@@ -121,6 +122,7 @@ export const setupRegionManager = (
             const currentTime = ws.getCurrentTime();
             // If we are not near the end, this might be a false positive event
             // often fired at the start of playback in some browsers/versions.
+
             if (currentTime < region.end - 0.05) {
                 return;
             }
@@ -194,6 +196,18 @@ export const setupRegionManager = (
         },
         setAutoplay: (shouldAutoplay: boolean) => {
             currentOptions.autoPlay = shouldAutoplay;
+        },
+        playRegion: (regionId: string) => {
+            const region = regionsPlugin.getRegions().find((r) => r.id === regionId);
+
+            if (region) {
+                activeRegion = region;
+                region.play();
+
+                if (!isInternalUpdate) {
+                    currentOptions.onFocus?.(region.id);
+                }
+            }
         },
         clearRegions: () => {
             regionsPlugin.clearRegions();

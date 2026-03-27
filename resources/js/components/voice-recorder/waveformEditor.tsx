@@ -278,6 +278,7 @@ export default function WaveformEditor({
                     regions={regions}
                     regionActions={regionActions}
                     focusedRegionId={focusedRegionId}
+                    setFocusedRegionId={setFocusedRegionId}
                 />
             </div>
         </div>

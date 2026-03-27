@@ -1,5 +1,6 @@
 import { LockIcon, TrashIcon } from 'lucide-react';
-import { type ChangeEvent, useEffect, useRef } from 'react';
+import {  useEffect, useRef } from 'react';
+import type {ChangeEvent} from 'react';
 import type { Region } from 'wavesurfer.js/plugins/regions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,12 +9,14 @@ type RegionEditorProps = {
     regions: Region[];
     regionActions: any;
     focusedRegionId?: string | null;
+    setFocusedRegionId?: (id: string | null) => void;
 };
 
 export default function RegionEditor({
     regions,
     regionActions,
     focusedRegionId,
+    setFocusedRegionId,
 }: RegionEditorProps) {
     return (
         <>
@@ -26,6 +29,7 @@ export default function RegionEditor({
                             region={region}
                             regionActions={regionActions}
                             isFocused={focusedRegionId === region.id}
+                            onFocused={() => setFocusedRegionId?.(null)}
                         />
                     );
                 })}
@@ -37,18 +41,21 @@ function RegionItem({
     region,
     regionActions,
     isFocused,
+    onFocused,
 }: {
     region: Region;
     regionActions: any;
     isFocused: boolean;
+    onFocused: () => void;
 }) {
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isFocused && inputRef.current) {
             inputRef.current.focus();
+            onFocused();
         }
-    }, [isFocused]);
+    }, [isFocused, onFocused]);
 
     function rgbaStringToHex(rgba: string) {
         const match = rgba.match(
@@ -109,6 +116,9 @@ function RegionItem({
                 value={contentValue}
                 placeholder="Region label..."
                 className="h-7 py-1"
+                onFocus={() => {
+                    regionActions?.playRegion(region.id);
+                }}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     const value = e.target.value;
                     region.setOptions({
