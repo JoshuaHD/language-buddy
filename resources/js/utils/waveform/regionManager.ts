@@ -93,6 +93,8 @@ export const setupRegionManager = (
 
         if (currentOptions.autoPlay && !isInternalUpdate && !region.isInitial) {
             region.play();
+        } else if (!isInternalUpdate && !region.isInitial) {
+            ws.pause();
         }
 
         notify();
