@@ -73,15 +73,8 @@ export const setupRegionManager = (
 
     const handleDoubleClicked = (region: any, e: MouseEvent) => {
         e.stopPropagation();
-        const confirmed = window.confirm('Delete this region?');
-
-        if (!confirmed) {
-            return;
-        }
-
-        region.remove();
-        activeRegion = null;
-        notify();
+        activeRegion = region;
+        region.play();
     };
 
     const handleRegionCreated = (region: any) => {
