@@ -44,6 +44,7 @@ export default function WaveformEditor({
     const [audioRate, setAudioRate] = useState(1);
     const [regions, setRegions] = useState<any[]>([]);
     const [regionActions, setRegionActions] = useState<any>(null);
+                                                                                                                                                                                                                  const [focusedRegionId, setFocusedRegionId] = useState<string | null>(null);
     const regionActionsRef = useRef<any>(null);
 
     const regionsRef = useRef<any[]>([]);
@@ -109,6 +110,7 @@ export default function WaveformEditor({
                 regionsRef.current = [...newRegions];
                 setRegions([...newRegions]);
             },
+            onFocus: (id) => setFocusedRegionId(id),
         });
 
         regionActionsRef.current = actions;
@@ -159,6 +161,7 @@ export default function WaveformEditor({
     function handleRecordStart() {
         setRegions([]);
         regionsRef.current = [];
+        setFocusedRegionId(null);
         regionActions?.clearRegions();
     }
 
@@ -193,20 +196,22 @@ export default function WaveformEditor({
                 </div>
             </div>
             <div id="timeline" />
-            <WavesurferPlayer
-                height={100}
-                waveColor="lightblue"
-                barGap={3}
-                barWidth={3}
-                barRadius={30}
-                url={usedUrl}
-                autoplay={false}
-                onReady={onReady}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                plugins={plugins}
-                interact={!isDummyUrl}
-            />
+            <div className="waveform-container">
+                <WavesurferPlayer
+                    height={100}
+                    waveColor="lightblue"
+                    barGap={3}
+                    barWidth={3}
+                    barRadius={30}
+                    url={usedUrl}
+                    autoplay={false}
+                    onReady={onReady}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    plugins={plugins}
+                    interact={!isDummyUrl}
+                />
+            </div>
 
             <div style={{ marginTop: '10px' }}>
                 <div
@@ -269,7 +274,11 @@ export default function WaveformEditor({
 
             <div className="mt-4 space-y-1">
                 <h3 className="text-sm font-bold">Regions:</h3>
-                <RegionEditor regions={regions} regionActions={regionActions} />
+                <RegionEditor
+                    regions={regions}
+                    regionActions={regionActions}
+                    focusedRegionId={focusedRegionId}
+                />
             </div>
         </div>
     );

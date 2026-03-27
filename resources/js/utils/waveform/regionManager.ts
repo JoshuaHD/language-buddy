@@ -5,6 +5,7 @@ import type { Region } from 'wavesurfer.js/plugins/regions';
 type RegionManagerOptions = {
     loopRegion: boolean;
     onRegionsChange: (newRegions: Region[]) => void;
+    onFocus?: (regionId: string) => void;
     autoPlay: boolean;
     initialRegions?: any[];
 };
@@ -63,6 +64,9 @@ export const setupRegionManager = (
         e.stopPropagation();
         activeRegion = region;
         region.play();
+        if (!isInternalUpdate) {
+            currentOptions.onFocus?.(region.id);
+        }
     };
 
     const handleDoubleClicked = (region: any, e: MouseEvent) => {
@@ -95,6 +99,10 @@ export const setupRegionManager = (
             region.play();
         } else if (!isInternalUpdate && !region.isInitial) {
             ws.pause();
+        }
+
+        if (!isInternalUpdate) {
+            currentOptions.onFocus?.(region.id);
         }
 
         notify();

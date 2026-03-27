@@ -33,7 +33,6 @@ export default function RecordAudioButton({
         const handleStart = () => {
             setIsRecording(true);
             setIsBusy(false);
-            onRecordStart?.();
         };
 
         const handleEnd = (blob: Blob) => {
@@ -62,6 +61,7 @@ export default function RecordAudioButton({
             recordActions.stop();
         } else {
             try {
+                onRecordStart?.();
                 await recordActions.start();
             } catch (err) {
                 console.error('Failed to start recording:', err);
