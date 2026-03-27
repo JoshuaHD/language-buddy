@@ -143,6 +143,7 @@ export default function WaveformEditor({
     );
 
     const onReady = (ws: WaveSurfer) => {
+        ws.pause();
         setWavesurfer(ws);
         setIsPlaying(false);
     };
@@ -162,6 +163,8 @@ export default function WaveformEditor({
     }
 
     function handleRecordEnd(blob: Blob) {
+        wavesurfer?.pause();
+        setIsPlaying(false);
         const blobUrl = URL.createObjectURL(blob);
         setUsedUrl(blobUrl);
         setRegions([]);
@@ -175,7 +178,9 @@ export default function WaveformEditor({
     }
 
     function handleUndo() {
-        if(url){
+        if (url) {
+            wavesurfer?.pause();
+            setIsPlaying(false);
             setUsedUrl(url);
         }
     }
@@ -195,6 +200,7 @@ export default function WaveformEditor({
                 barWidth={3}
                 barRadius={30}
                 url={usedUrl}
+                autoplay={false}
                 onReady={onReady}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
